@@ -1,0 +1,16 @@
+node_modules
+/src
+/test
+/.github
+/dist/package.json
+.gitignore
+coverage
+yarn.lock
+tsconfig.json
+tsconfig.esm.json
+jest.config.ts
+.eslintrc.json
+.prettierrc
+.env.test
+/esm
+/documents
