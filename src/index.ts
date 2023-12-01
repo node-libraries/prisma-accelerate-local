@@ -50,6 +50,8 @@ const createKey = () => {
   };
 };
 
+const targetPath = path.resolve(__dirname, "../../node_modules/.prisma/client");
+
 const BaseConfig = {
   runtimeDataModel: { models: {}, enums: {}, types: {} },
   relativeEnvPaths: {
@@ -59,7 +61,7 @@ const BaseConfig = {
   relativePath: "",
   datasourceNames: ["db"],
   inlineSchema: "",
-  dirname: "",
+  dirname: targetPath,
   clientVersion: "",
   engineVersion: enginesVersion,
   activeProvider: "",
@@ -67,7 +69,7 @@ const BaseConfig = {
   inlineSchemaHash: "",
 };
 
-export const createServer = ({
+export const createServer = async ({
   port,
   datasourceUrl,
 }: {
@@ -77,14 +79,11 @@ export const createServer = ({
   const prismaMap: {
     [key: string]: InstanceType<ReturnType<typeof getPrismaClient>>;
   } = {};
-  const targetPath = path.resolve(
-    __dirname,
-    "../../node_modules/.prisma/client"
-  );
+
   fs.mkdirSync(targetPath, { recursive: true });
-  download({
+  await download({
     binaries: {
-      "libquery-engine": "./node_modules/.prisma/client",
+      "libquery-engine": targetPath,
     },
     version: enginesVersion,
   });
