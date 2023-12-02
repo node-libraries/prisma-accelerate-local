@@ -1,5 +1,4 @@
 import { getPrismaClient } from "@prisma/client/runtime/library";
-import { enginesVersion } from "@prisma/engines";
 import { download } from "@prisma/fetch-engine";
 import { fastify } from "fastify";
 import forge from "node-forge";
@@ -17,27 +16,27 @@ const createKey = () => {
   const attrs = [
     {
       name: "commonName",
-      value: "example.org",
+      value: "example.com",
     },
     {
       name: "countryName",
-      value: "JP",
+      value: "EXAMPLE",
     },
     {
       shortName: "ST",
-      value: "Tokyo",
+      value: "Example State",
     },
     {
       name: "localityName",
-      value: "Chiyoda-ku",
+      value: "Example Locality",
     },
     {
       name: "organizationName",
-      value: "Test",
+      value: "Example Org",
     },
     {
       shortName: "OU",
-      value: "Test",
+      value: "Example Org Unit",
     },
   ];
   cert.setSubject(attrs);
@@ -50,8 +49,6 @@ const createKey = () => {
   };
 };
 
-const targetPath = path.resolve(__dirname, "../../node_modules/.prisma/client");
-
 const BaseConfig = {
   runtimeDataModel: { models: {}, enums: {}, types: {} },
   relativeEnvPaths: {
@@ -61,12 +58,23 @@ const BaseConfig = {
   relativePath: "",
   datasourceNames: ["db"],
   inlineSchema: "",
-  dirname: targetPath,
+  dirname: "",
   clientVersion: "",
-  engineVersion: enginesVersion,
+  engineVersion: "",
   activeProvider: "",
   inlineDatasources: {},
   inlineSchemaHash: "",
+};
+
+const getEngineVersion = async (version: string) => {
+  const versions = await fetch(
+    "https://registry.npmjs.org/@prisma%2Fengines-version"
+  )
+    .then((v) => v.json())
+    .then(({ versions }) =>
+      Object.keys(versions).sort((a, b) => (a === b ? 0 : a > b ? -1 : 1))
+    );
+  return versions.find((v) => v.startsWith(version))?.slice(-40);
 };
 
 export const createServer = async ({
@@ -80,18 +88,13 @@ export const createServer = async ({
     [key: string]: InstanceType<ReturnType<typeof getPrismaClient>>;
   } = {};
 
-  fs.mkdirSync(targetPath, { recursive: true });
-  await download({
-    binaries: {
-      "libquery-engine": targetPath,
-    },
-    version: enginesVersion,
-  });
-
   return fastify({ https: createKey() })
-    .post("/:version/:hash/*", async (request, reply) => {
-      const { hash } = request.params as { version: string; hash: string };
-      const prisma = prismaMap[hash];
+    .post("/:version/:hash/graphql", async (request, reply) => {
+      const { version, hash } = request.params as {
+        version: string;
+        hash: string;
+      };
+      const prisma = prismaMap[`${version}-${hash}`];
       if (!prisma) {
         reply
           .status(404)
@@ -116,14 +119,48 @@ export const createServer = async ({
             ],
           };
         });
-      return JSON.stringify(result);
+      return result;
     })
-    .put("/:version/:hash/*", async (request) => {
-      const { hash } = request.params as { version: string; hash: string };
+    .put("/:version/:hash/schema", async (request, reply) => {
+      const { version, hash } = request.params as {
+        version: string;
+        hash: string;
+      };
+      const engineVersion = await getEngineVersion(version);
+      if (!engineVersion) {
+        reply
+          .status(404)
+          .send({ EngineNotStarted: { reason: "VersionMissing" } });
+        return;
+      }
       const inlineSchema = request.body as string;
-      const PrismaClient = getPrismaClient({ ...BaseConfig, inlineSchema });
+      const dirname = path.resolve(
+        __dirname,
+        "../../node_modules/.prisma/client",
+        engineVersion
+      );
+      fs.mkdirSync(dirname, { recursive: true });
+      const engine = await download({
+        binaries: {
+          "libquery-engine": dirname,
+        },
+        version: engineVersion,
+      }).catch(() => undefined);
+      if (!engine) {
+        reply
+          .status(404)
+          .send({ EngineNotStarted: { reason: "EngineMissing" } });
+        return;
+      }
+      const PrismaClient = getPrismaClient({
+        ...BaseConfig,
+        inlineSchema,
+        dirname,
+        engineVersion,
+      });
       const prisma = new PrismaClient({ datasourceUrl });
-      prismaMap[hash] = prisma;
+      prismaMap[`${version}-${hash}`] = prisma;
+      return { success: true };
     })
     .listen({ port });
 };
