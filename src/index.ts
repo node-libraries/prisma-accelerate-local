@@ -1,9 +1,9 @@
-import { getPrismaClient } from "@prisma/client/runtime/library";
-import { download } from "@prisma/fetch-engine";
-import { fastify } from "fastify";
-import forge from "node-forge";
-import fs from "fs";
-import path from "path";
+import fs from 'fs';
+import path from 'path';
+import { getPrismaClient } from '@prisma/client/runtime/library';
+import { download } from '@prisma/fetch-engine';
+import { fastify } from 'fastify';
+import forge from 'node-forge';
 
 const createKey = () => {
   const keys = forge.pki.rsa.generateKeyPair(2048);
@@ -15,28 +15,28 @@ const createKey = () => {
 
   const attrs = [
     {
-      name: "commonName",
-      value: "example.com",
+      name: 'commonName',
+      value: 'example.com',
     },
     {
-      name: "countryName",
-      value: "EXAMPLE",
+      name: 'countryName',
+      value: 'EXAMPLE',
     },
     {
-      shortName: "ST",
-      value: "Example State",
+      shortName: 'ST',
+      value: 'Example State',
     },
     {
-      name: "localityName",
-      value: "Example Locality",
+      name: 'localityName',
+      value: 'Example Locality',
     },
     {
-      name: "organizationName",
-      value: "Example Org",
+      name: 'organizationName',
+      value: 'Example Org',
     },
     {
-      shortName: "OU",
-      value: "Example Org Unit",
+      shortName: 'OU',
+      value: 'Example Org Unit',
     },
   ];
   cert.setSubject(attrs);
@@ -52,53 +52,58 @@ const createKey = () => {
 const BaseConfig = {
   runtimeDataModel: { models: {}, enums: {}, types: {} },
   relativeEnvPaths: {
-    rootEnvPath: "",
-    schemaEnvPath: "",
+    rootEnvPath: '',
+    schemaEnvPath: '',
   },
-  relativePath: "",
-  datasourceNames: ["db"],
-  inlineSchema: "",
-  dirname: "",
-  clientVersion: "",
-  engineVersion: "",
-  activeProvider: "",
+  relativePath: '',
+  datasourceNames: ['db'],
+  inlineSchema: '',
+  dirname: '',
+  clientVersion: '',
+  engineVersion: '',
+  activeProvider: '',
   inlineDatasources: {},
-  inlineSchemaHash: "",
-};
-
-const getEngineVersion = async (version: string) => {
-  const versions = await fetch(
-    "https://registry.npmjs.org/@prisma%2Fengines-version"
-  )
-    .then((v) => v.json())
-    .then(({ versions }) =>
-      Object.keys(versions).sort((a, b) => (a === b ? 0 : a > b ? -1 : 1))
-    );
-  return versions.find((v) => v.startsWith(version))?.slice(-40);
+  inlineSchemaHash: '',
 };
 
 export const createServer = async ({
   port,
   datasourceUrl,
+  https,
+  apiKey,
 }: {
   port: number;
   datasourceUrl: string;
+  https?: { cert: string; key: string };
+  apiKey?: string;
 }) => {
   const prismaMap: {
     [key: string]: InstanceType<ReturnType<typeof getPrismaClient>>;
   } = {};
 
-  return fastify({ https: createKey() })
-    .post("/:version/:hash/graphql", async (request, reply) => {
-      const { version, hash } = request.params as {
+  return fastify({ https: https ?? createKey() })
+    .post('/:version/:hash/graphql', async (request, reply) => {
+      if (apiKey) {
+        const authorization = request.headers['authorization'];
+        const key = authorization?.replace('Bearer ', '');
+        if (key !== apiKey) {
+          reply.status(401).send({ Unauthorized: { reason: 'InvalidKey' } });
+          return;
+        }
+      }
+      const { hash } = request.params as {
         version: string;
         hash: string;
       };
-      const prisma = prismaMap[`${version}-${hash}`];
+      const engineVersion = request.headers['prisma-engine-hash'] as string;
+      if (!engineVersion) {
+        reply.status(404).send({ EngineNotStarted: { reason: 'VersionMissing' } });
+        return;
+      }
+
+      const prisma = prismaMap[`${engineVersion}-${hash}`];
       if (!prisma) {
-        reply
-          .status(404)
-          .send({ EngineNotStarted: { reason: "SchemaMissing" } });
+        reply.status(404).send({ EngineNotStarted: { reason: 'SchemaMissing' } });
         return;
       }
       const query = JSON.parse(request.body as string);
@@ -121,35 +126,35 @@ export const createServer = async ({
         });
       return result;
     })
-    .put("/:version/:hash/schema", async (request, reply) => {
-      const { version, hash } = request.params as {
+    .put('/:version/:hash/schema', async (request, reply) => {
+      if (apiKey) {
+        const authorization = request.headers['authorization'];
+        const key = authorization?.replace('Bearer ', '');
+        if (key !== apiKey) {
+          reply.status(401).send({ Unauthorized: { reason: 'InvalidKey' } });
+          return;
+        }
+      }
+      const { hash } = request.params as {
         version: string;
         hash: string;
       };
-      const engineVersion = await getEngineVersion(version);
+      const engineVersion = request.headers['prisma-engine-hash'] as string;
       if (!engineVersion) {
-        reply
-          .status(404)
-          .send({ EngineNotStarted: { reason: "VersionMissing" } });
+        reply.status(404).send({ EngineNotStarted: { reason: 'VersionMissing' } });
         return;
       }
       const inlineSchema = request.body as string;
-      const dirname = path.resolve(
-        __dirname,
-        "../../node_modules/.prisma/client",
-        engineVersion
-      );
+      const dirname = path.resolve(__dirname, '../../node_modules/.prisma/client', engineVersion);
       fs.mkdirSync(dirname, { recursive: true });
       const engine = await download({
         binaries: {
-          "libquery-engine": dirname,
+          'libquery-engine': dirname,
         },
         version: engineVersion,
       }).catch(() => undefined);
       if (!engine) {
-        reply
-          .status(404)
-          .send({ EngineNotStarted: { reason: "EngineMissing" } });
+        reply.status(404).send({ EngineNotStarted: { reason: 'EngineMissing' } });
         return;
       }
       const PrismaClient = getPrismaClient({
@@ -159,7 +164,7 @@ export const createServer = async ({
         engineVersion,
       });
       const prisma = new PrismaClient({ datasourceUrl });
-      prismaMap[`${version}-${hash}`] = prisma;
+      prismaMap[`${engineVersion}-${hash}`] = prisma;
       return { success: true };
     })
     .listen({ port });
