@@ -35,6 +35,8 @@ If the "-a" option is not specified at startup, the value of api_key is ignored.
 ```env
 DATABASE_URL="prisma://localhost:4000/?api_key=abc"
 NODE_TLS_REJECT_UNAUTHORIZED="0"
+# To remove the NODE_TLS_REJECT_UNAUTHORIZED warning
+NODE_NO_WARNINGS="1"
 ```
 
 - Prisma Accelerate must be configured on the client side.
@@ -50,5 +52,7 @@ import { createServer } from 'prisma-accelerate-local';
 
 const server = createServer({
   datasourceUrl: 'postgresql://postgres:password@localhost:5432/postgres',
-}.listen({ port:4000 }).then((url) => console.log(`🚀  Server ready at ${url} `));
+})
+  .listen({ port: 4000 })
+  .then((url) => console.log(`🚀  Server ready at ${url} `));
 ```
