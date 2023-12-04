@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String   @default("User")
+  posts     Post[]
+  roles     Role[]   @default([USER])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id          String     @id @default(uuid())
+  published   Boolean    @default(false)
+  title       String     @default("New Post")
+  content     String     @default("")
+  author      User?      @relation(fields: [authorId], references: [id])
+  authorId    String?
+  categories  Category[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  publishedAt DateTime   @default(now())
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  posts     Post[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+// This model is only here to test the scalar list functionality
+model TypeTest {
+  id         String   @id @default(uuid())
+  scalarList String[]
+  role       Role
+}

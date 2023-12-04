@@ -1,9 +1,10 @@
+coverage
 node_modules
 .next
 .swc
 .vscode
 out
-.env*
+.env.proxy
 *.log
 blog.json
 storybook-static

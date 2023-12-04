@@ -41,9 +41,9 @@ const main = async () => {
             key: fs.readFileSync(key).toString('utf8'),
           }
         : undefined;
-    createServer({ datasourceUrl, port, https, apiKey }).then((url) =>
-      console.log(`🚀  Server ready at ${url} `)
-    );
+    createServer({ datasourceUrl, https, apiKey })
+      .listen({ port })
+      .then((url) => console.log(`🚀  Server ready at ${url} `));
   }
 };
 

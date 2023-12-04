@@ -5,7 +5,7 @@ import { download } from '@prisma/fetch-engine';
 import { FastifyReply, FastifyRequest, fastify } from 'fastify';
 import forge from 'node-forge';
 
-const createKey = () => {
+export const createKey = () => {
   const keys = forge.pki.rsa.generateKeyPair(2048);
   const cert = forge.pki.createCertificate();
   cert.publicKey = keys.publicKey;
@@ -71,11 +71,13 @@ const getPrisma = ({
   reply,
   prismaMap,
   apiKey,
+  ignoreSchemaError,
 }: {
   request: FastifyRequest;
   reply: FastifyReply;
   apiKey?: string;
   prismaMap: { [key: string]: InstanceType<ReturnType<typeof getPrismaClient>> };
+  ignoreSchemaError?: boolean;
 }) => {
   if (apiKey) {
     const authorization = request.headers['authorization'];
@@ -95,7 +97,7 @@ const getPrisma = ({
     return;
   }
   const prisma = prismaMap[`${engineVersion}-${hash}`];
-  if (!prisma) {
+  if (!prisma && !ignoreSchemaError) {
     reply.status(404).send({ EngineNotStarted: { reason: 'SchemaMissing' } });
     return;
   }
@@ -107,13 +109,11 @@ export const getHost = (request: FastifyRequest) => {
   return headers['x-forwarded-host'] ?? headers['host'];
 };
 
-export const createServer = async ({
-  port,
+export const createServer = ({
   datasourceUrl,
   https,
   apiKey,
 }: {
-  port: number;
   datasourceUrl: string;
   https?: { cert: string; key: string };
   apiKey?: string;
@@ -127,6 +127,37 @@ export const createServer = async ({
       const prisma = getPrisma({ apiKey, request, reply, prismaMap });
       if (!prisma) return;
       const query = JSON.parse(request.body as string);
+
+      if (query.batch) {
+        const result = await prisma._engine
+          .requestBatch(query.batch, {
+            containsWrite: true,
+            transaction: {
+              kind: 'batch',
+              options: query.transaction,
+            },
+          })
+          .then((batchResult) => {
+            return { batchResult };
+          })
+          .catch((e) => {
+            return {
+              errors: [
+                {
+                  error: String(e),
+                  user_facing_error: {
+                    is_panic: false,
+                    message: e.message,
+                    meta: e.meta,
+                    error_code: e.code,
+                    batch_request_idx: 1,
+                  },
+                },
+              ],
+            };
+          });
+        return result;
+      }
       return prisma._engine
         .request(query, { isWrite: true })
         .catch((e: { message: string; code: number; meta: unknown }) => {
@@ -208,47 +239,35 @@ export const createServer = async ({
       return prisma._engine.transaction('rollback', {}, { id, payload: {} });
     })
     .put('/:version/:hash/schema', async (request, reply) => {
-      if (apiKey) {
-        const authorization = request.headers['authorization'];
-        const key = authorization?.replace('Bearer ', '');
-        if (key !== apiKey) {
-          reply.status(401).send({ Unauthorized: { reason: 'InvalidKey' } });
-          return;
-        }
-      }
+      if (getPrisma({ apiKey, request, reply, prismaMap, ignoreSchemaError: true })) return;
+
       const { hash } = request.params as {
         version: string;
         hash: string;
       };
       const engineVersion = request.headers['prisma-engine-hash'] as string;
-      if (!engineVersion) {
-        reply.status(404).send({ EngineNotStarted: { reason: 'VersionMissing' } });
+
+      const inlineSchema = request.body as string;
+      const dirname = path.resolve(__dirname, '../../node_modules/.prisma/client', engineVersion);
+      fs.mkdirSync(dirname, { recursive: true });
+      const engine = await download({
+        binaries: {
+          'libquery-engine': dirname,
+        },
+        version: engineVersion,
+      }).catch(() => undefined);
+      if (!engine) {
+        reply.status(404).send({ EngineNotStarted: { reason: 'EngineMissing' } });
         return;
       }
-      if (!prismaMap[`${engineVersion}-${hash}`]) {
-        const inlineSchema = request.body as string;
-        const dirname = path.resolve(__dirname, '../../node_modules/.prisma/client', engineVersion);
-        fs.mkdirSync(dirname, { recursive: true });
-        const engine = await download({
-          binaries: {
-            'libquery-engine': dirname,
-          },
-          version: engineVersion,
-        }).catch(() => undefined);
-        if (!engine) {
-          reply.status(404).send({ EngineNotStarted: { reason: 'EngineMissing' } });
-          return;
-        }
-        const PrismaClient = getPrismaClient({
-          ...BaseConfig,
-          inlineSchema,
-          dirname,
-          engineVersion,
-        });
-        const prisma = new PrismaClient({ datasourceUrl });
-        prismaMap[`${engineVersion}-${hash}`] = prisma;
-      }
+      const PrismaClient = getPrismaClient({
+        ...BaseConfig,
+        inlineSchema,
+        dirname,
+        engineVersion,
+      });
+      prismaMap[`${engineVersion}-${hash}`] = new PrismaClient({ datasourceUrl });
+
       return { success: true };
-    })
-    .listen({ port });
+    });
 };

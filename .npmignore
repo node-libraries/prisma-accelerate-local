@@ -1,5 +1,7 @@
 node_modules
 /src
+/coverage
+/proxy
 /test
 /.github
 /dist/package.json
@@ -11,6 +13,6 @@ tsconfig.esm.json
 jest.config.ts
 .eslintrc.json
 .prettierrc
-.env.test
+.env.*
 /esm
 /documents

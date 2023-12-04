@@ -1,0 +1,15 @@
+version: '3.7'
+services:
+  postgres:
+    container_name: miqan-postgres
+    image: postgres:alpine
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - miqan-vol:/var/lib/postgresql/data
+    ports:
+      - '25432:5432'
+volumes:
+  miqan-vol:
