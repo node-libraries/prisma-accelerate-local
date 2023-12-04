@@ -1,10 +1,11 @@
 {
   "name": "prisma-accelerate-local",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "scripts": {
     "build": "tsc && tsc -p ./tsconfig.esm.json && cpy esm dist",
     "test:proxy": "tsc && node dist/cjs/command postgresql://postgres:password@localhost:15432/postgres -p 8000",
+    "lint": "eslint src",
     "lint:fix": "eslint --fix src && prettier -w src",
     "dev:docker": "docker compose -p prisma-accelerate-local -f test/docker/docker-compose.yml up -d",
     "prisma:generate": "yarn prisma generate --schema=test/prisma/schema.prisma --no-engine",
