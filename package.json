@@ -1,9 +1,10 @@
 {
   "name": "prisma-accelerate-local",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "license": "MIT",
   "scripts": {
     "build": "tsc && tsc -p ./tsconfig.esm.json && cpy esm dist",
+    "test": "tsc && node dist/cjs/command postgresql://postgres:password@localhost:15432/postgres -p 8000",
     "lint:fix": "eslint --fix src && prettier -w src"
   },
   "bin": {
