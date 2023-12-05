@@ -76,7 +76,9 @@ const getPrisma = ({
   request: FastifyRequest;
   reply: FastifyReply;
   apiKey?: string;
-  prismaMap: { [key: string]: InstanceType<ReturnType<typeof getPrismaClient>> };
+  prismaMap: {
+    [key: string]: Promise<InstanceType<ReturnType<typeof getPrismaClient>> | undefined>;
+  };
   ignoreSchemaError?: boolean;
 }) => {
   if (apiKey) {
@@ -119,12 +121,12 @@ export const createServer = ({
   apiKey?: string;
 }) => {
   const prismaMap: {
-    [key: string]: InstanceType<ReturnType<typeof getPrismaClient>>;
+    [key: string]: Promise<InstanceType<ReturnType<typeof getPrismaClient>> | undefined>;
   } = {};
 
   return fastify({ https: https ?? createKey() })
     .post('/:version/:hash/graphql', async (request, reply) => {
-      const prisma = getPrisma({ apiKey, request, reply, prismaMap });
+      const prisma = await getPrisma({ apiKey, request, reply, prismaMap });
       if (!prisma) return;
       const query = JSON.parse(request.body as string);
 
@@ -177,7 +179,7 @@ export const createServer = ({
         });
     })
     .post('/:version/:hash/transaction/start', async (request, reply) => {
-      const prisma = getPrisma({ apiKey, request, reply, prismaMap });
+      const prisma = await getPrisma({ apiKey, request, reply, prismaMap });
       if (!prisma) return;
       const { id } = await prisma._engine.transaction(
         'start',
@@ -197,7 +199,7 @@ export const createServer = ({
       };
     })
     .post('/:version/:hash/itx/:id/graphql', async (request, reply) => {
-      const prisma = getPrisma({ apiKey, request, reply, prismaMap });
+      const prisma = await getPrisma({ apiKey, request, reply, prismaMap });
       if (!prisma) return;
       const { id } = request.params as {
         id: string;
@@ -223,7 +225,7 @@ export const createServer = ({
       return result;
     })
     .post('/:version/:hash/itx/:id/commit', async (request, reply) => {
-      const prisma = getPrisma({ apiKey, request, reply, prismaMap });
+      const prisma = await getPrisma({ apiKey, request, reply, prismaMap });
       if (!prisma) return;
       const { id } = request.params as {
         id: string;
@@ -231,7 +233,7 @@ export const createServer = ({
       return prisma._engine.transaction('commit', {}, { id, payload: {} });
     })
     .post('/:version/:hash/itx/:id/rollback', async (request, reply) => {
-      const prisma = getPrisma({ apiKey, request, reply, prismaMap });
+      const prisma = await getPrisma({ apiKey, request, reply, prismaMap });
       if (!prisma) return;
       const { id } = request.params as {
         id: string;
@@ -247,27 +249,30 @@ export const createServer = ({
       };
       const engineVersion = request.headers['prisma-engine-hash'] as string;
 
-      const inlineSchema = request.body as string;
-      const dirname = path.resolve(__dirname, '../../node_modules/.prisma/client', engineVersion);
-      fs.mkdirSync(dirname, { recursive: true });
-      const engine = await download({
-        binaries: {
-          'libquery-engine': dirname,
-        },
-        version: engineVersion,
-      }).catch(() => undefined);
-      if (!engine) {
-        reply.status(404).send({ EngineNotStarted: { reason: 'EngineMissing' } });
-        return;
-      }
-      const PrismaClient = getPrismaClient({
-        ...BaseConfig,
-        inlineSchema,
-        dirname,
-        engineVersion,
-      });
-      prismaMap[`${engineVersion}-${hash}`] = new PrismaClient({ datasourceUrl });
-
-      return { success: true };
+      const result = async () => {
+        const inlineSchema = request.body as string;
+        const dirname = path.resolve(__dirname, '../../node_modules/.prisma/client', engineVersion);
+        fs.mkdirSync(dirname, { recursive: true });
+        const engine = await download({
+          binaries: {
+            'libquery-engine': dirname,
+          },
+          version: engineVersion,
+        }).catch(() => undefined);
+        if (!engine) {
+          reply.status(404).send({ EngineNotStarted: { reason: 'EngineMissing' } });
+          return undefined;
+        }
+        const PrismaClient = getPrismaClient({
+          ...BaseConfig,
+          inlineSchema,
+          dirname,
+          engineVersion,
+        });
+        return new PrismaClient({ datasourceUrl });
+      };
+      const p = result();
+      prismaMap[`${engineVersion}-${hash}`] = p;
+      await p;
     });
 };

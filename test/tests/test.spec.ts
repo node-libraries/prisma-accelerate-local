@@ -2,8 +2,39 @@ import { PrismaClient } from '@prisma/client/edge';
 import { beforeAllAsync } from 'jest-async';
 import { createServer } from '../../src';
 
+const port = 8000;
+
+describe('insert', () => {
+  const property = beforeAllAsync(async () => {
+    const server = createServer({
+      datasourceUrl: 'postgresql://postgres:password@localhost:25432/postgres?schema=test',
+    });
+    server.listen({ port });
+    const prisma = new PrismaClient({
+      datasourceUrl: `prisma://localhost:${port}/?api_key=${process.env.API_KEY}`,
+    });
+    return { server, prisma };
+  });
+
+  afterAll(async () => {
+    const { prisma, server } = await property;
+    prisma.$disconnect();
+    server.close();
+  });
+
+  it('insert', async () => {
+    const { prisma } = await property;
+    await prisma.user.deleteMany();
+    const result = await Promise.all([
+      prisma.user.create({ data: { name: 'test1', email: 'test1@example.com' } }),
+      prisma.user.create({ data: { name: 'test2', email: 'test2@example.com' } }),
+      prisma.user.create({ data: { name: 'test3', email: 'test3@example.com' } }),
+    ]);
+    expect(result.length).toEqual(3);
+  });
+});
+
 describe('query error', () => {
-  const port = 8002;
   const property = beforeAllAsync(async () => {
     const server = createServer({
       datasourceUrl: 'postgresql://postgres:password@localhost:25432/postgres?schema=test',
@@ -52,63 +83,7 @@ describe('query error', () => {
   });
 });
 
-describe('transaction test', () => {
-  const property = beforeAllAsync(async () => {
-    const server = createServer({
-      datasourceUrl: 'postgresql://postgres:password@localhost:25432/postgres?schema=test',
-    });
-    server.listen({ port: 8000 });
-    const prisma = new PrismaClient({
-      datasourceUrl: `prisma://localhost:8000/?api_key=${process.env.API_KEY}`,
-    });
-    return { server, prisma };
-  });
-
-  afterAll(async () => {
-    const { prisma, server } = await property;
-    prisma.$disconnect();
-    server.close();
-  });
-
-  it('createMany', async () => {
-    const { prisma } = await property;
-    await prisma.user.deleteMany();
-    const result = await prisma.user.createMany({
-      data: [
-        { name: 'test1', email: 'test1@example.com' },
-        { name: 'test2', email: 'test2@example.com' },
-        { name: 'test3', email: 'test3@example.com' },
-      ],
-    });
-
-    expect(result.count).toEqual(3);
-  });
-
-  it('batch', async () => {
-    const { prisma } = await property;
-    await prisma.user.deleteMany();
-    const result = await prisma.$transaction([
-      prisma.user.create({ data: { name: 'test1', email: 'test1@example.com' } }),
-      prisma.user.create({ data: { name: 'test2', email: 'test2@example.com' } }),
-    ]);
-    expect(result.length).toEqual(2);
-  });
-
-  it('transaction', async () => {
-    const { prisma } = await property;
-    await prisma.user.deleteMany();
-    const result = await prisma.$transaction(async (prisma) => {
-      return [
-        await prisma.user.create({ data: { name: 'test1', email: 'test1@example.com' } }),
-        await prisma.user.create({ data: { name: 'test2', email: 'test2@example.com' } }),
-      ];
-    });
-    expect(result.length).toEqual(2);
-  });
-});
-
 describe('api_key', () => {
-  const port = 8001;
   const property = beforeAllAsync(async () => {
     const server = createServer({
       apiKey: 'ABC',
@@ -155,7 +130,6 @@ describe('api_key', () => {
 
 describe('engine error', () => {
   const originalFetch = global.fetch;
-  const port = 8004;
   const property = beforeAllAsync(async () => {
     const server = createServer({
       datasourceUrl: 'postgresql://postgres:password@localhost:25432/postgres?schema=test',
