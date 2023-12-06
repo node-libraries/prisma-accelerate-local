@@ -11,7 +11,7 @@ describe('transaction test', () => {
     });
     server.listen({ port });
     const prisma = new PrismaClient({
-      datasourceUrl: `prisma://localhost:8000/?api_key=${process.env.API_KEY}`,
+      datasourceUrl: `prisma://localhost:${port}/?api_key=${process.env.API_KEY}`,
     });
     return { server, prisma };
   });

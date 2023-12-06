@@ -1,13 +1,12 @@
 {
   "name": "prisma-accelerate-local",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "license": "MIT",
   "scripts": {
     "build": "tsc && tsc -p ./tsconfig.esm.json && cpy esm dist",
     "test:proxy": "tsc && node dist/cjs/command postgresql://postgres:password@localhost:15432/postgres -p 8000",
     "lint": "eslint src",
     "lint:fix": "eslint --fix src && prettier -w src",
-    "dev:docker": "docker compose -p prisma-accelerate-local -f test/docker/docker-compose.yml up -d",
     "prisma:generate": "yarn prisma generate --schema=test/prisma/schema.prisma --no-engine",
     "prisma:format": "yarn prisma format --schema=test/prisma/schema.prisma",
     "prisma:migrate": "next-exec -c test -- yarn prisma migrate dev --schema=test/prisma/schema.prisma -n migrate",
@@ -15,6 +14,7 @@
     "proxy:migrate": "next-exec -c proxy -- yarn prisma migrate dev --schema=test/prisma/schema.prisma -n migrate",
     "proxy:dev": "next-exec -c proxy -- yarn ts-node-dev ./proxy",
     "proxy:test": "next-exec -c proxy -- jest --coverage",
+    "test:docker": "docker compose -p prisma-accelerate-local -f test/docker/docker-compose.yml up -d",
     "test:reset": "yarn prisma:reset",
     "test": "next-exec -c test -- jest --coverage"
   },

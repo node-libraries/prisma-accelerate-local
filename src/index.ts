@@ -241,7 +241,7 @@ export const createServer = ({
       return prisma._engine.transaction('rollback', {}, { id, payload: {} });
     })
     .put('/:version/:hash/schema', async (request, reply) => {
-      if (getPrisma({ apiKey, request, reply, prismaMap, ignoreSchemaError: true })) return;
+      if (await getPrisma({ apiKey, request, reply, prismaMap, ignoreSchemaError: true })) return;
 
       const { hash } = request.params as {
         version: string;
@@ -251,7 +251,14 @@ export const createServer = ({
 
       const result = async () => {
         const inlineSchema = request.body as string;
-        const dirname = path.resolve(__dirname, '../../node_modules/.prisma/client', engineVersion);
+
+        const dirname = path.resolve(
+          __dirname,
+          fs.existsSync(path.resolve(__dirname, '../node_modules'))
+            ? '../node_modules/.prisma/client'
+            : '../../node_modules/.prisma/client',
+          engineVersion
+        );
         fs.mkdirSync(dirname, { recursive: true });
         const engine = await download({
           binaries: {
@@ -271,8 +278,6 @@ export const createServer = ({
         });
         return new PrismaClient({ datasourceUrl });
       };
-      const p = result();
-      prismaMap[`${engineVersion}-${hash}`] = p;
-      await p;
+      prismaMap[`${engineVersion}-${hash}`] = result();
     });
 };
