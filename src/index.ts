@@ -134,13 +134,21 @@ export const createServer = ({
         const result = await prisma._engine
           .requestBatch(query.batch, {
             containsWrite: true,
-            transaction: {
-              kind: 'batch',
-              options: query.transaction,
-            },
+            transaction: query.transaction
+              ? {
+                  kind: 'batch',
+                  options: query.transaction,
+                }
+              : undefined,
           })
           .then((batchResult) => {
-            return { batchResult };
+            return {
+              batchResult: batchResult.map((v) => ('data' in v ? v.data : v)),
+              extensions: {
+                traces: [],
+                logs: [],
+              },
+            };
           })
           .catch((e) => {
             return {
