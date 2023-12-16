@@ -282,7 +282,7 @@ export const createServer = ({
           ...BaseConfig,
           inlineSchema,
           dirname,
-          engineVersion,
+          engineVersion: engineVersion,
         });
         return new PrismaClient({ datasourceUrl });
       };
