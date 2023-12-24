@@ -27,12 +27,14 @@ const main = async () => {
     console.log(`\t-c, --cert <path> Path to ssl cert file`);
     console.log(`\t-k, --key <path> Path to ssl key file`);
     console.log(`\t-a, --apiKey <key> API key for authentication`);
+    console.log(`\t-w, --wasm Use wasm as the run-time engine`);
   } else {
     const datasourceUrl = argv._[0];
     const port = argv.p ?? argv.port ?? 4000;
     const cert = argv.c ?? argv.cert;
     const key = argv.k ?? argv.key;
     const apiKey = argv.a ?? argv.apiKey;
+    const wasm = !!(argv.w ?? argv.wasm);
 
     const https =
       cert && key
@@ -41,7 +43,7 @@ const main = async () => {
             key: fs.readFileSync(key).toString('utf8'),
           }
         : undefined;
-    createServer({ datasourceUrl, https, apiKey })
+    createServer({ datasourceUrl, https, apiKey, wasm })
       .listen({ port })
       .then((url) => console.log(`🚀  Server ready at ${url} `));
   }

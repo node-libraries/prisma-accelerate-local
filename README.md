@@ -6,14 +6,15 @@ Prisma Accelerate functionality can be self-hosted locally.
 
 ### CLI Options
 
-| Category      | Option            | Description                      |
-| ------------- | ----------------- | -------------------------------- |
-| **USAGE**     | [option] _\<url>_ |                                  |
-| **ARGUMENTS** | _\<url>_          | Datasource url                   |
-| **OPTIONS**   | _-p, --port_      | Port to listen on (default:4000) |
-|               | _-c, --cert_      | Path to ssl cert file            |
-|               | _-k, --key_       | Path to ssl key file             |
-|               | _-a, --apiKey_    | API key for authentication       |
+| Category      | Option            | Description                                   |
+| ------------- | ----------------- | --------------------------------------------- |
+| **USAGE**     | [option] _\<url>_ |                                               |
+| **ARGUMENTS** | _\<url>_          | Datasource url                                |
+| **OPTIONS**   | _-p, --port_      | Port to listen on (default:4000)              |
+|               | _-c, --cert_      | Path to ssl cert file                         |
+|               | _-k, --key_       | Path to ssl key file                          |
+|               | _-a, --apiKey_    | API key for authentication                    |
+|               | _-w, --wasm_      | Use wasm as the run-time engine(early-access) |
 
 ### CLI
 
