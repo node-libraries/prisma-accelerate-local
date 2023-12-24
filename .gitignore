@@ -4,6 +4,7 @@ node_modules
 .swc
 .vscode
 out
+.env.test.local
 .env.proxy
 *.log
 blog.json

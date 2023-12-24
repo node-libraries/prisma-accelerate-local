@@ -4,6 +4,7 @@ import { fastify } from 'fastify';
 import forge from 'node-forge';
 import pg from 'pg';
 import { PrismaAccelerate } from './prisma-accelerate.js';
+export * from './prisma-accelerate.js';
 
 export const createKey = () => {
   const keys = forge.pki.rsa.generateKeyPair(2048);

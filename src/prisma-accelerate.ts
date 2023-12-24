@@ -250,38 +250,37 @@ export class PrismaAccelerate {
   }
   async getPath(engineVersion: string) {
     const baseDir = this.wasm ? '@prisma/client/runtime' : '.prisma/client';
-    if ('process' in globalThis) {
-      const path = await import('node:path');
-      const fs = await import('node:fs');
+    if ('Deno' in globalThis) return '';
 
-      const dirname = path.resolve(
-        __dirname,
-        fs.existsSync(path.resolve(__dirname, '../node_modules')) ? '..' : '../..',
-        'node_modules',
-        baseDir,
-        this.wasm ? '' : engineVersion
-      );
-      if (!this.wasm) {
-        fs.mkdirSync(dirname, { recursive: true });
-        const engine = await (
-          await import('@prisma/fetch-engine')
-        )
-          .download({
-            binaries: {
-              'libquery-engine': dirname,
-            },
-            version: engineVersion,
-          })
-          .catch(() => undefined);
-        if (!engine) {
-          throw new ResultError(404, {
-            EngineNotStarted: { reason: 'EngineMissing' },
-          });
-        }
+    const path = await import('node:path');
+    const fs = await import('node:fs');
+
+    const dirname = path.resolve(
+      __dirname,
+      fs.existsSync(path.resolve(__dirname, '../node_modules')) ? '..' : '../..',
+      'node_modules',
+      baseDir,
+      this.wasm ? '' : engineVersion
+    );
+    if (!this.wasm) {
+      fs.mkdirSync(dirname, { recursive: true });
+      const engine = await (
+        await import('@prisma/fetch-engine')
+      )
+        .download({
+          binaries: {
+            'libquery-engine': dirname,
+          },
+          version: engineVersion,
+        })
+        .catch(() => undefined);
+      if (!engine) {
+        throw new ResultError(404, {
+          EngineNotStarted: { reason: 'EngineMissing' },
+        });
       }
-      return dirname;
     }
-    return '';
+    return dirname;
   }
   async updateSchema({
     hash,
