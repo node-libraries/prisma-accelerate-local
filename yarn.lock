@@ -700,7 +700,7 @@
     picocolors "^1.0.0"
     tslib "^2.6.0"
 
-"@prisma/adapter-pg@^5.8.0-dev.41":
+"@prisma/adapter-pg@^5.8.0-dev.42":
   version "5.8.0-integration-refactor-consistently-use-binarytarget-term.2"
   resolved "https://registry.yarnpkg.com/@prisma/adapter-pg/-/adapter-pg-5.8.0-integration-refactor-consistently-use-binarytarget-term.2.tgz#26e882bdf2ec39521000c542d0cf12cde0ef2a80"
   integrity sha512-bfCeCaSfOQBsrFOrwTuVwdAGYFCY/nIQ3kv4jvQWpaWGVknfEuSP77Ll5vfx99PZA4Vyx/cSKitwcAnmua0OHg==
@@ -708,7 +708,7 @@
     "@prisma/driver-adapter-utils" "5.8.0-integration-refactor-consistently-use-binarytarget-term.2"
     postgres-array "3.0.2"
 
-"@prisma/client@^5.8.0-dev.41":
+"@prisma/client@^5.8.0-dev.42":
   version "5.8.0-integration-refactor-consistently-use-binarytarget-term.2"
   resolved "https://registry.yarnpkg.com/@prisma/client/-/client-5.8.0-integration-refactor-consistently-use-binarytarget-term.2.tgz#d6f6bdbb8126730fe89cf25d1964296dd9ec52db"
   integrity sha512-xZLkwkNgsIhO15CiaJ4cWfeIttfzgkcZHzVD4cGQF/YqY6Z0+9uzimgWrn18FdQQg1clgmzw7P2TwGpwunuapA==
@@ -3101,6 +3101,11 @@ jest@*, jest@^29.7.0:
     "@jest/types" "^29.6.3"
     import-local "^3.0.2"
     jest-cli "^29.7.0"
+
+jose@^5.2.0:
+  version "5.2.0"
+  resolved "https://registry.yarnpkg.com/jose/-/jose-5.2.0.tgz#d0ffd7f7e31253f633eefb190a930cd14a916995"
+  integrity sha512-oW3PCnvyrcm1HMvGTzqjxxfnEs9EoFOFWi2HsEGhlFVOXxTE3K9GKWVMFoFw06yPUqwpvEWic1BmtUZBI/tIjw==
 
 js-tokens@^4.0.0:
   version "4.0.0"

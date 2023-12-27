@@ -50,25 +50,35 @@ export const createKey = () => {
   };
 };
 
+const getAdapter = (datasourceUrl: string) => {
+  const url = new URL(datasourceUrl);
+  const schema = url.searchParams.get('schema');
+  const pool = new pg.Pool({
+    connectionString: url.toString(),
+  });
+  return new PrismaPg(pool, {
+    schema: schema ?? undefined,
+  });
+};
+
 export const createServer = ({
   datasourceUrl,
   https,
-  apiKey,
   wasm,
+  secret,
 }: {
-  datasourceUrl: string;
+  datasourceUrl?: string;
   https?: { cert: string; key: string };
-  apiKey?: string;
   wasm?: boolean;
+  secret?: string;
 }) => {
   const prismaAccelerate = new PrismaAccelerate({
-    apiKey,
-    wasm,
-    PrismaPg,
-    pg,
+    secret,
+    datasourceUrl,
+    adapter: wasm ? getAdapter : undefined,
     getPrismaClient,
     async getQueryEngineWasmModule() {
-      const dirname = (this as typeof this & { dirname: string }).dirname;
+      const dirname = (this as unknown as { dirname: string }).dirname;
       const queryEngineWasmFilePath = (await import('node:path')).join(
         dirname,
         'query-engine.wasm'
@@ -112,7 +122,7 @@ export const createServer = ({
     })
     .put('/:version/:hash/schema', async ({ body, params, headers }, reply) => {
       const { hash } = params as { hash: string };
-      return prismaAccelerate.updateSchema({ hash, headers, datasourceUrl, body }).catch((e) => {
+      return prismaAccelerate.updateSchema({ hash, headers, body }).catch((e) => {
         return reply.status(e.code).send(e.value);
       });
     });

@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import minimist from 'minimist';
-import { createServer } from '..';
+import { PrismaAccelerate, createServer } from '..';
 import '@colors/colors';
 
 const readPackage = () => {
@@ -13,9 +13,28 @@ const readPackage = () => {
 };
 
 const main = async () => {
-  const argv = minimist(process.argv.slice(2));
+  const argv = minimist(process.argv.slice(2), {
+    alias: {
+      p: 'port',
+      c: 'cert',
+      k: 'key',
+      a: 'apiKey',
+      w: 'wasm',
+      s: 'secret',
+      m: 'make',
+    },
+    boolean: ['wasm', 'make'],
+  });
 
-  if (!argv._.length) {
+  const datasourceUrl = argv._[0];
+  const port = argv.p ?? 4000;
+  const cert = argv.c;
+  const key = argv.k;
+  const wasm = argv.w;
+  const secret = argv.s;
+  const make = argv.m;
+
+  if (!datasourceUrl && secret && make) {
     const pkg = readPackage();
     console.log(`${pkg.name} ${pkg.version}\n`.blue);
     console.log('USAGE'.bold);
@@ -26,15 +45,15 @@ const main = async () => {
     console.log(`\t-p, --port <port> Port to listen on`);
     console.log(`\t-c, --cert <path> Path to ssl cert file`);
     console.log(`\t-k, --key <path> Path to ssl key file`);
-    console.log(`\t-a, --apiKey <key> API key for authentication`);
     console.log(`\t-w, --wasm Use wasm as the run-time engine`);
+    console.log(`\t-s, --secret <secret>`);
+    console.log(`\t-m, --make make api key`);
   } else {
-    const datasourceUrl = argv._[0];
-    const port = argv.p ?? argv.port ?? 4000;
-    const cert = argv.c ?? argv.cert;
-    const key = argv.k ?? argv.key;
-    const apiKey = argv.a ?? argv.apiKey;
-    const wasm = !!(argv.w ?? argv.wasm);
+    if (secret && make) {
+      const token = await PrismaAccelerate.createApiKey({ datasourceUrl, secret });
+      console.log(token);
+      return;
+    }
 
     const https =
       cert && key
@@ -43,7 +62,7 @@ const main = async () => {
             key: fs.readFileSync(key).toString('utf8'),
           }
         : undefined;
-    createServer({ datasourceUrl, https, apiKey, wasm })
+    createServer({ datasourceUrl, https, wasm, secret })
       .listen({ port })
       .then((url) => console.log(`🚀  Server ready at ${url} `));
   }

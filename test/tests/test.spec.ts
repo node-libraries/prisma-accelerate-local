@@ -84,47 +84,37 @@ describe('query error', () => {
 });
 
 describe('api_key', () => {
+  const apiKey =
+    'eyJhbGciOiJIUzI1NiJ9.eyJkYXRhc291cmNlVXJsIjoicG9zdGdyZXNxbDovL3Bvc3RncmVzOnBhc3N3b3JkQGxvY2FsaG9zdDoyNTQzMi9wb3N0Z3Jlcz9zY2hlbWE9dGVzdCIsImlhdCI6MTcwMzY1NzkyNCwiaXNzIjoicHJpc21hLWFjY2VsZXJhdGUifQ.qatmr52J4PgMsC3wI2Ie9r00mhRVT22oDt7ca7hqf98';
   const property = beforeAllAsync(async () => {
     const server = createServer({
-      apiKey: 'ABC',
-      datasourceUrl: 'postgresql://postgres:password@localhost:25432/postgres?schema=test',
+      secret: 'abc',
     });
     server.listen({ port });
-    const prisma = new PrismaClient({
-      datasourceUrl: `prisma://localhost:${port}/?api_key=abc`,
-    });
-    return { prisma, server };
+    return { server };
   });
 
   afterAll(async () => {
-    const { server, prisma } = await property;
+    const { server } = await property;
     server.close();
-    prisma.$disconnect();
   });
 
   it('success', async () => {
     const prisma = new PrismaClient({
-      datasourceUrl: `prisma://localhost:${port}/?api_key=ABC`,
+      datasourceUrl: `prisma://localhost:${port}/?api_key=${apiKey}`,
     });
     const result = await prisma.user.findMany();
     expect(Array.isArray(result)).toBeTruthy();
     prisma.$disconnect();
   });
 
-  it('query error', async () => {
-    const { prisma } = await property;
+  it('error', async () => {
+    const prisma = new PrismaClient({
+      datasourceUrl: `prisma://localhost:${port}/?api_key=test`,
+    });
     const result = prisma.user.findMany();
     await expect(result).rejects.toThrow();
-  });
-  it('transaction error', async () => {
-    const { prisma } = await property;
-    const result = prisma.$transaction(async (prisma) => {
-      return [
-        await prisma.user.create({ data: { name: 'test1', email: 'test1@example.com' } }),
-        await prisma.user.create({ data: { name: 'test2', email: 'test2@example.com' } }),
-      ];
-    });
-    await expect(result).rejects.toThrow();
+    prisma.$disconnect();
   });
 });
 

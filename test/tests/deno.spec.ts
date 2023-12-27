@@ -4,7 +4,7 @@ import { beforeAllAsync } from 'jest-async';
 describe('insert', () => {
   const property = beforeAllAsync(async () => {
     const prisma = new PrismaClient({
-      datasourceUrl: `${process.env.DENO}/?api_key=${process.env.API_KEY}`,
+      datasourceUrl: `${process.env.DENO}/?api_key=${process.env.DENO_API_KEY}`,
     });
     return { prisma };
   });

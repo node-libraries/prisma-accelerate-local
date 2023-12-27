@@ -90,48 +90,38 @@ describe('query error', () => {
 });
 
 describe('api_key', () => {
+  const apiKey =
+    'eyJhbGciOiJIUzI1NiJ9.eyJkYXRhc291cmNlVXJsIjoicG9zdGdyZXNxbDovL3Bvc3RncmVzOnBhc3N3b3JkQGxvY2FsaG9zdDoyNTQzMi9wb3N0Z3Jlcz9zY2hlbWE9dGVzdCIsImlhdCI6MTcwMzY1NzkyNCwiaXNzIjoicHJpc21hLWFjY2VsZXJhdGUifQ.qatmr52J4PgMsC3wI2Ie9r00mhRVT22oDt7ca7hqf98';
+
   const property = beforeAllAsync(async () => {
     const server = createServer({
-      apiKey: 'ABC',
-      datasourceUrl: 'postgresql://postgres:password@localhost:25432/postgres?schema=test',
+      secret: 'abc',
       wasm: true,
     });
     server.listen({ port });
-    const prisma = new PrismaClient({
-      datasourceUrl: `prisma://localhost:${port}/?api_key=abc`,
-    });
-    return { prisma, server };
+    return { server };
   });
 
   afterAll(async () => {
-    const { server, prisma } = await property;
-    await server.close();
-    await prisma.$disconnect();
+    const { server } = await property;
+    server.close();
   });
 
   it('success', async () => {
     const prisma = new PrismaClient({
-      datasourceUrl: `prisma://localhost:${port}/?api_key=ABC`,
+      datasourceUrl: `prisma://localhost:${port}/?api_key=${apiKey}`,
     });
-    const result = await prisma.category.findMany();
+    const result = await prisma.user.findMany();
     expect(Array.isArray(result)).toBeTruthy();
     prisma.$disconnect();
   });
 
-  it('query error', async () => {
-    const { prisma } = await property;
-    const result = prisma.category.findMany();
-    await expect(result).rejects.toThrow();
-  });
-  it('transaction error', async () => {
-    const { prisma } = await property;
-    const result = prisma.$transaction(async (prisma) => {
-      return [
-        prisma.category.create({ data: { name: 'test1' } }),
-        prisma.category.create({ data: { name: 'test2' } }),
-        prisma.category.create({ data: { name: 'test3' } }),
-      ];
+  it('error', async () => {
+    const prisma = new PrismaClient({
+      datasourceUrl: `prisma://localhost:${port}/?api_key=test`,
     });
+    const result = prisma.user.findMany();
     await expect(result).rejects.toThrow();
+    prisma.$disconnect();
   });
 });
