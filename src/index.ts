@@ -68,7 +68,7 @@ export const createServer = ({
   secret,
 }: {
   datasourceUrl?: string;
-  https?: { cert: string; key: string };
+  https?: { cert: string; key: string } | null;
   wasm?: boolean;
   secret?: string;
 }) => {
@@ -89,7 +89,7 @@ export const createServer = ({
       return new WebAssembly.Module(queryEngineWasmFileBytes);
     },
   });
-  return fastify({ https: https ?? createKey() })
+  return fastify({ https: https === undefined ? createKey() : https })
     .post('/:version/:hash/graphql', async ({ body, params, headers }, reply) => {
       const { hash } = params as { hash: string };
       return prismaAccelerate.query({ hash, headers, body }).catch((e) => {

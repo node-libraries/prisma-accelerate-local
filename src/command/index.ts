@@ -15,6 +15,7 @@ const readPackage = () => {
 const main = async () => {
   const argv = minimist(process.argv.slice(2), {
     alias: {
+      t: 'http',
       p: 'port',
       c: 'cert',
       k: 'key',
@@ -23,10 +24,11 @@ const main = async () => {
       s: 'secret',
       m: 'make',
     },
-    boolean: ['wasm', 'make'],
+    boolean: ['wasm', 'make', 'http'],
   });
 
   const datasourceUrl = argv._[0];
+  const http = argv.http;
   const port = argv.p ?? 4000;
   const cert = argv.c;
   const key = argv.k;
@@ -42,6 +44,7 @@ const main = async () => {
     console.log('ARGUMENTS'.bold);
     console.log(`\t<url> Datasource Url`);
     console.log('OPTIONS'.bold);
+    console.log(`\t-t, --http Accepted at http`);
     console.log(`\t-p, --port <port> Port to listen on`);
     console.log(`\t-c, --cert <path> Path to ssl cert file`);
     console.log(`\t-k, --key <path> Path to ssl key file`);
@@ -62,7 +65,7 @@ const main = async () => {
             key: fs.readFileSync(key).toString('utf8'),
           }
         : undefined;
-    createServer({ datasourceUrl, https, wasm, secret })
+    createServer({ datasourceUrl, https: http ? null : https, wasm, secret })
       .listen({ port })
       .then((url) => console.log(`🚀  Server ready at ${url} `));
   }
