@@ -1,7 +1,7 @@
 import { type Server } from 'node:https';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { getPrismaClient } from '@prisma/client/runtime/library.js';
-import { fastify, type FastifyServerOptions, type FastifyHttpsOptions } from 'fastify';
+import { fastify, type FastifyHttpsOptions } from 'fastify';
 import forge from 'node-forge';
 import pg from 'pg';
 import { PrismaAccelerate } from './prisma-accelerate.js';
@@ -93,10 +93,11 @@ export const createServer = (
       return new WebAssembly.Module(queryEngineWasmFileBytes);
     },
   });
+
   return fastify({
-    ...fastifySeverOptions,
     https: https === undefined ? createKey() : https,
-  } as FastifyHttpsOptions<Server>)
+    ...fastifySeverOptions,
+  })
     .post('/:version/:hash/graphql', async ({ body, params, headers }, reply) => {
       const { hash } = params as { hash: string };
       return prismaAccelerate.query({ hash, headers, body }).catch((e) => {

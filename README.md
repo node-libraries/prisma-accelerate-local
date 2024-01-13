@@ -2,21 +2,31 @@
 
 Prisma Accelerate functionality can be self-hosted locally.
 
+## Samples
+
+- Node.js (local)  
+  https://github.com/SoraKumo001/prisma-accelerate-local-test
+- Cloudflare Workers (local)  
+  https://github.com/SoraKumo001/cloudflare-workers-prisma
+- Deno (server)  
+  https://github.com/SoraKumo001/prisma-accelerate-deno
+
 ## usage
 
 ### CLI Options
 
-| Category      | Option                 | Description                                   |
-| ------------- | ---------------------- | --------------------------------------------- |
-| **USAGE**     | [option] _\<url>_      |                                               |
-| **ARGUMENTS** | _\<url>_               | Datasource url                                |
-| **OPTIONS**   | -t, --http             | Accepted at http                              |
-|               | -p, --port \<port>     | Port to listen on (default:4000)              |
-|               | -c, --cert \<path>     | Path to ssl cert file                         |
-|               | -k, --key \<path>      | Path to ssl key file                          |
-|               | -w, --wasm             | Use wasm as the run-time engine(early-access) |
-|               | -s, --secret \<secret> | Secret used with API key                      |
-|               | -m, --make             | make api key                                  |
+| Category      | Option                      | Description                                   |
+| ------------- | --------------------------- | --------------------------------------------- |
+| **USAGE**     | [option] _\<url>_           |                                               |
+| **ARGUMENTS** | _\<url>_                    | Datasource url                                |
+| **OPTIONS**   | -t, --http                  | Accepted at http                              |
+|               | -p, --port \<port>          | Port to listen on (default:4000)              |
+|               | -c, --cert \<path>          | Path to ssl cert file                         |
+|               | -k, --key \<path>           | Path to ssl key file                          |
+|               | -w, --wasm                  | Use wasm as the run-time engine(early-access) |
+|               | -s, --secret \<secret>      | Secret used with API key                      |
+|               | -m, --make                  | make api key                                  |
+|               | -b, --bodyLimit \<size(MB)> | body limit size(default: 16MB)                |
 
 ### CLI
 
