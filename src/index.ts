@@ -74,7 +74,7 @@ export const createServer = (
     wasm?: boolean;
     secret?: string;
   },
-  fastifySeverOptions?: FastifyServerOptions = {}
+  fastifySeverOptions: FastifyServerOptions = {}
 ) => {
   const prismaAccelerate = new PrismaAccelerate({
     secret,
