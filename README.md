@@ -78,9 +78,15 @@ If you call this package as a library, it will look like this.
 ```ts
 import { createServer } from 'prisma-accelerate-local';
 
-const server = createServer({
-  datasourceUrl: 'postgresql://postgres:password@localhost:5432/postgres',
-})
+const server = createServer(
+  {
+    datasourceUrl: 'postgresql://postgres:password@localhost:5432/postgres',
+  },
+  // Optional Fastify server instance options: https://fastify.dev/docs/latest/Reference/Server/#factory
+  {
+    bodyLimit: 1024 * 1024 * 10, // 10mb
+  }
+)
   .listen({ port: 4000 })
   .then((url) => console.log(`🚀  Server ready at ${url} `));
 ```
