@@ -2,6 +2,15 @@
 
 Prisma Accelerate functionality can be self-hosted locally.
 
+## Samples
+
+- Node.js (local)  
+  https://github.com/SoraKumo001/prisma-accelerate-local-test
+- Cloudflare Workers (local)  
+  https://github.com/SoraKumo001/cloudflare-workers-prisma
+- Deno (server)  
+  https://github.com/SoraKumo001/prisma-accelerate-deno
+
 ## usage
 
 ### CLI Options

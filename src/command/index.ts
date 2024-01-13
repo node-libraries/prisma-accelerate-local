@@ -23,6 +23,7 @@ const main = async () => {
       w: 'wasm',
       s: 'secret',
       m: 'make',
+      b: 'bodyLimit',
     },
     boolean: ['wasm', 'make', 'http'],
   });
@@ -35,8 +36,9 @@ const main = async () => {
   const wasm = argv.w;
   const secret = argv.s;
   const make = argv.m;
+  const bodyLimit = argv.b ?? '16';
 
-  if (!datasourceUrl && secret && make) {
+  if ((!datasourceUrl && !secret) || (make && !secret)) {
     const pkg = readPackage();
     console.log(`${pkg.name} ${pkg.version}\n`.blue);
     console.log('USAGE'.bold);
@@ -51,6 +53,7 @@ const main = async () => {
     console.log(`\t-w, --wasm Use wasm as the run-time engine`);
     console.log(`\t-s, --secret <secret>`);
     console.log(`\t-m, --make make api key`);
+    console.log(`\t-b, --bodyLimit <size(MB)> body limit size(default: 16MB)`);
   } else {
     if (secret && make) {
       const token = await PrismaAccelerate.createApiKey({ datasourceUrl, secret });
@@ -65,7 +68,14 @@ const main = async () => {
             key: fs.readFileSync(key).toString('utf8'),
           }
         : undefined;
-    createServer({ datasourceUrl, https: http ? null : https, wasm, secret })
+
+    createServer({
+      datasourceUrl,
+      https: http ? null : https,
+      wasm,
+      secret,
+      fastifySeverOptions: { bodyLimit: Number(bodyLimit) * 1024 * 1024 },
+    })
       .listen({ port })
       .then((url) => console.log(`🚀  Server ready at ${url} `));
   }

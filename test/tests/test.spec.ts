@@ -34,6 +34,63 @@ describe('insert', () => {
   });
 });
 
+describe('bodyLimit', () => {
+  const property = beforeAllAsync(async () => {
+    const server = createServer({
+      datasourceUrl: 'postgresql://postgres:password@localhost:25432/postgres?schema=test',
+      fastifySeverOptions: { bodyLimit: 1 * 1024 * 1024 },
+    });
+    server.listen({ port });
+    const prisma = new PrismaClient({
+      datasourceUrl: `prisma://localhost:${port}/?api_key=${process.env.API_KEY}`,
+    });
+    return { server, prisma };
+  });
+
+  afterAll(async () => {
+    const { prisma, server } = await property;
+    prisma.$disconnect();
+    server.close();
+  });
+
+  it('insert', async () => {
+    const { prisma } = await property;
+    await prisma.user.deleteMany();
+    const result = await Promise.all([
+      prisma.user.create({ data: { name: 'test1', email: 'test1@example.com' } }),
+      prisma.user.create({ data: { name: 'test2', email: 'test2@example.com' } }),
+      prisma.user.create({ data: { name: 'test3', email: 'test3@example.com' } }),
+    ]);
+    expect(result.length).toEqual(3);
+  });
+});
+
+describe('bodyLimit error', () => {
+  const property = beforeAllAsync(async () => {
+    const server = createServer({
+      datasourceUrl: 'postgresql://postgres:password@localhost:25432/postgres?schema=test',
+      fastifySeverOptions: { bodyLimit: 1 },
+    });
+    server.listen({ port });
+    const prisma = new PrismaClient({
+      datasourceUrl: `prisma://localhost:${port}/?api_key=${process.env.API_KEY}`,
+    });
+    return { server, prisma };
+  });
+
+  afterAll(async () => {
+    const { prisma, server } = await property;
+    prisma.$disconnect();
+    server.close();
+  });
+
+  it('limit error', async () => {
+    const { prisma } = await property;
+    const result = prisma.user.deleteMany();
+    await expect(result).rejects.toThrow();
+  });
+});
+
 describe('query error', () => {
   const property = beforeAllAsync(async () => {
     const server = createServer({
