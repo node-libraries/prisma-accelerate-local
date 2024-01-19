@@ -37,6 +37,7 @@ export class PrismaAccelerate {
   getPrismaClient: typeof getPrismaClient;
   adapter?: (datasourceUrl: string) => DriverAdapter;
   datasourceUrl?: string;
+  getEnginePath?: (adapter: boolean, engineVersion: string) => Promise<string | undefined>;
 
   static createApiKey = async ({
     secret,
@@ -58,18 +59,21 @@ export class PrismaAccelerate {
     adapter,
     secret,
     datasourceUrl,
+    getEnginePath,
   }: {
     getQueryEngineWasmModule?: () => Promise<unknown>;
     getPrismaClient: typeof getPrismaClient;
     adapter?: (datasourceUrl: string) => DriverAdapter;
     secret?: string;
     datasourceUrl?: string;
+    getEnginePath?: (adapter: boolean, engineVersion: string) => Promise<string | undefined>;
   }) {
     this.adapter = adapter;
     this.getQueryEngineWasmModule = getQueryEngineWasmModule;
     this.getPrismaClient = _getPrismaClient;
     this.secret = secret;
     this.datasourceUrl = datasourceUrl;
+    this.getEnginePath = getEnginePath;
   }
   private getDatasourceUrl(headers: IncomingHttpHeaders) {
     if (!this.secret) return this.datasourceUrl;
@@ -264,38 +268,15 @@ export class PrismaAccelerate {
     return prisma._engine.transaction('rollback', {}, { id, payload: {} });
   }
   async getPath(engineVersion: string) {
-    const baseDir = this.adapter ? '@prisma/client/runtime' : '.prisma/client';
-    if ('Deno' in globalThis) return '';
+    if (!this.getEnginePath) return '';
 
-    const path = await import('node:path');
-    const fs = await import('node:fs');
-
-    const dirname = path.resolve(
-      __dirname,
-      fs.existsSync(path.resolve(__dirname, '../node_modules')) ? '..' : '../..',
-      'node_modules',
-      baseDir,
-      this.adapter ? '' : engineVersion
-    );
-    if (!this.adapter) {
-      fs.mkdirSync(dirname, { recursive: true });
-      const engine = await (
-        await import('@prisma/fetch-engine')
-      )
-        .download({
-          binaries: {
-            'libquery-engine': dirname,
-          },
-          version: engineVersion,
-        })
-        .catch(() => undefined);
-      if (!engine) {
-        throw new ResultError(404, {
-          EngineNotStarted: { reason: 'EngineMissing' },
-        });
-      }
+    const path = await this.getEnginePath(!!this.adapter, engineVersion);
+    if (!path) {
+      throw new ResultError(404, {
+        EngineNotStarted: { reason: 'EngineMissing' },
+      });
     }
-    return dirname;
+    return path;
   }
   async updateSchema({
     hash,

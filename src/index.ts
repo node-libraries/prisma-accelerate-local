@@ -1,6 +1,9 @@
+import fs from 'fs';
 import { type Server } from 'node:https';
+import path from 'path';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { getPrismaClient } from '@prisma/client/runtime/library.js';
+import { download } from '@prisma/fetch-engine';
 import { fastify, type FastifyHttpsOptions } from 'fastify';
 import forge from 'node-forge';
 import pg from 'pg';
@@ -90,6 +93,29 @@ export const createServer = ({
         queryEngineWasmFilePath
       );
       return new WebAssembly.Module(queryEngineWasmFileBytes);
+    },
+    getEnginePath: async (adapter, engineVersion) => {
+      const baseDir = adapter ? '@prisma/client/runtime' : '.prisma/client';
+      const dirname = path.resolve(
+        __dirname,
+        fs.existsSync(path.resolve(__dirname, '../node_modules')) ? '..' : '../..',
+        'node_modules',
+        baseDir,
+        adapter ? '' : engineVersion
+      );
+      if (!adapter) {
+        fs.mkdirSync(dirname, { recursive: true });
+        const engine = await download({
+          binaries: {
+            'libquery-engine': dirname,
+          },
+          version: engineVersion,
+        }).catch(() => undefined);
+        if (!engine) {
+          return undefined;
+        }
+      }
+      return dirname;
     },
   });
 

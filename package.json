@@ -1,6 +1,6 @@
 {
   "name": "prisma-accelerate-local",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "license": "MIT",
   "scripts": {
     "build": "tsc && tsc -p ./tsconfig.esm.json && cpy esm dist",
