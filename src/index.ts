@@ -78,22 +78,24 @@ export const createServer = ({
   secret?: string;
   fastifySeverOptions?: Omit<FastifyHttpsOptions<Server>, 'https'> | FastifyHttpsOptions<Server>;
 }) => {
+  const property = { dirname: '' };
   const prismaAccelerate = new PrismaAccelerate({
     secret,
     datasourceUrl,
     adapter: wasm ? getAdapter : undefined,
     getPrismaClient,
-    async getQueryEngineWasmModule() {
-      const dirname = (this as unknown as { dirname: string }).dirname;
-      const queryEngineWasmFilePath = (await import('node:path')).join(
-        dirname,
-        'query-engine.wasm'
-      );
-      const queryEngineWasmFileBytes = (await import('node:fs')).readFileSync(
-        queryEngineWasmFilePath
-      );
-      return new WebAssembly.Module(queryEngineWasmFileBytes);
-    },
+    getQueryEngineWasmModule: wasm
+      ? async () => {
+          const queryEngineWasmFilePath = (await import('path')).join(
+            property.dirname,
+            'query-engine.wasm'
+          );
+          const queryEngineWasmFileBytes = (await import('fs')).readFileSync(
+            queryEngineWasmFilePath
+          );
+          return new WebAssembly.Module(queryEngineWasmFileBytes);
+        }
+      : undefined,
     getEnginePath: async (adapter, engineVersion) => {
       const baseDir = adapter ? '@prisma/client/runtime' : '.prisma/client';
       const dirname = path.resolve(
@@ -115,6 +117,7 @@ export const createServer = ({
           return undefined;
         }
       }
+      property.dirname = dirname;
       return dirname;
     },
   });

@@ -1,7 +1,7 @@
 import zlib from 'zlib';
 import fastifyProxy from '@fastify/http-proxy';
 import { fastify } from 'fastify';
-import { createKey } from '../src';
+import { createKey } from '../dist/cjs/index';
 
 const main = async () => {
   const server = fastify({

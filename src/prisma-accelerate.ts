@@ -319,7 +319,7 @@ export class PrismaAccelerate {
               binaryTargets: [
                 {
                   fromEnvVar: null,
-                  value: '',
+                  value: 'native',
                   native: true,
                 },
               ],
