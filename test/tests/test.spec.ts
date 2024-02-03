@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client/edge';
 import { beforeAllAsync } from 'jest-async';
 import { createServer } from '../../src';
 
-const port = 8002;
+const port = 8000;
 
 describe('insert', () => {
   const property = beforeAllAsync(async () => {
