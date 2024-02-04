@@ -28,17 +28,12 @@ export class ResultError extends Error {
   }
 }
 
+export type PrismaAccelerateConfig = ConstructorParameters<typeof PrismaAccelerate>[0];
+
 export class PrismaAccelerate {
   prismaMap: {
     [key: string]: Promise<InstanceType<ReturnType<typeof getPrismaClient>> | undefined>;
   } = {};
-  secret?: string;
-  getQueryEngineWasmModule?: () => Promise<unknown>;
-  getPrismaClient: typeof getPrismaClient;
-  adapter?: (datasourceUrl: string) => DriverAdapter;
-  datasourceUrl?: string;
-  getEnginePath?: (adapter: boolean, engineVersion: string) => Promise<string | undefined>;
-
   static createApiKey = async ({
     secret,
     datasourceUrl,
@@ -53,33 +48,41 @@ export class PrismaAccelerate {
       .sign(new TextEncoder().encode(secret));
   };
 
-  constructor({
-    getQueryEngineWasmModule,
-    getPrismaClient: _getPrismaClient,
-    adapter,
-    secret,
-    datasourceUrl,
-    getEnginePath,
-  }: {
-    getQueryEngineWasmModule?: () => Promise<unknown>;
-    getPrismaClient: typeof getPrismaClient;
-    adapter?: (datasourceUrl: string) => DriverAdapter;
-    secret?: string;
-    datasourceUrl?: string;
-    getEnginePath?: (adapter: boolean, engineVersion: string) => Promise<string | undefined>;
-  }) {
-    this.adapter = adapter;
-    this.getQueryEngineWasmModule = getQueryEngineWasmModule;
-    this.getPrismaClient = _getPrismaClient;
-    this.secret = secret;
-    this.datasourceUrl = datasourceUrl;
-    this.getEnginePath = getEnginePath;
-  }
+  constructor(
+    private config: {
+      getQueryEngineWasmModule?: () => Promise<unknown>;
+      getPrismaClient: typeof getPrismaClient;
+      adapter?: (datasourceUrl: string) => DriverAdapter;
+      secret?: string;
+      datasourceUrl?: string;
+      getEnginePath?: (adapter: boolean, engineVersion: string) => Promise<string | undefined>;
+      onRequestSchema?: ({
+        engineVersion,
+        hash,
+        datasourceUrl,
+      }: {
+        engineVersion: string;
+        hash: string;
+        datasourceUrl: string;
+      }) => Promise<string | undefined | null>;
+      onChangeSchema?: ({
+        inlineSchema,
+        engineVersion,
+        hash,
+        datasourceUrl,
+      }: {
+        inlineSchema: string;
+        engineVersion: string;
+        hash: string;
+        datasourceUrl: string;
+      }) => Promise<void>;
+    }
+  ) {}
   private getDatasourceUrl(headers: IncomingHttpHeaders) {
-    if (!this.secret) return this.datasourceUrl;
+    if (!this.config.secret) return this.config.datasourceUrl;
     const authorization = headers['authorization'];
     const key = authorization?.replace('Bearer ', '') ?? '';
-    return jwtVerify<{ datasourceUrl: string }>(key, new TextEncoder().encode(this.secret))
+    return jwtVerify<{ datasourceUrl: string }>(key, new TextEncoder().encode(this.config.secret))
       .then((v) => v.payload.datasourceUrl)
       .catch(() => undefined);
   }
@@ -105,6 +108,23 @@ export class PrismaAccelerate {
       });
     }
     const prisma = this.prismaMap[`${engineVersion}-${hash}-${datasourceUrl}`];
+
+    if (!prisma) {
+      const inlineSchema = await this.config.onRequestSchema?.({
+        engineVersion,
+        hash,
+        datasourceUrl,
+      });
+      if (inlineSchema) {
+        return this.createPrismaClient({
+          inlineSchema,
+          engineVersion,
+          hash,
+          datasourceUrl,
+        });
+      }
+    }
+
     if (!prisma && !ignoreSchemaError) {
       throw new ResultError(404, {
         EngineNotStarted: { reason: 'SchemaMissing' },
@@ -268,9 +288,9 @@ export class PrismaAccelerate {
     return prisma._engine.transaction('rollback', {}, { id, payload: {} });
   }
   async getPath(engineVersion: string) {
-    if (!this.getEnginePath) return '';
+    if (!this.config.getEnginePath) return '';
 
-    const path = await this.getEnginePath(!!this.adapter, engineVersion);
+    const path = await this.config.getEnginePath(!!this.config.adapter, engineVersion);
     if (!path) {
       throw new ResultError(404, {
         EngineNotStarted: { reason: 'EngineMissing' },
@@ -278,31 +298,25 @@ export class PrismaAccelerate {
     }
     return path;
   }
-  async updateSchema({
+  createPrismaClient({
+    inlineSchema,
+    engineVersion,
     hash,
-    headers,
-    body,
+    datasourceUrl,
   }: {
+    inlineSchema: string;
+    engineVersion: string;
     hash: string;
-    headers: IncomingHttpHeaders;
-    body: unknown;
-  }) {
-    if (await this.getPrisma({ hash, headers, ignoreSchemaError: true }).catch(() => null)) return;
-
-    const engineVersion = headers['prisma-engine-hash'] as string;
-    const datasourceUrl = await this.getDatasourceUrl(headers);
-    if (!datasourceUrl) {
-      throw new ResultError(401, { Unauthorized: { reason: 'InvalidKey' } });
-    }
-    const result = async () => {
-      const inlineSchema = body as string;
+    datasourceUrl: string;
+  }): Promise<InstanceType<ReturnType<typeof getPrismaClient>>> {
+    const resolve = async () => {
       const dirname = await this.getPath(engineVersion);
-      const PrismaClient = this.getPrismaClient({
+      const PrismaClient = this.config.getPrismaClient({
         ...BaseConfig,
         inlineSchema,
         dirname,
         engineVersion,
-        generator: this.adapter
+        generator: this.config.adapter
           ? {
               name: '',
               provider: {
@@ -326,15 +340,43 @@ export class PrismaAccelerate {
               previewFeatures: ['driverAdapters'],
             }
           : undefined,
-        getQueryEngineWasmModule: this.getQueryEngineWasmModule,
+        getQueryEngineWasmModule: this.config.getQueryEngineWasmModule,
       });
-
-      if (this.adapter) {
-        return new PrismaClient({ adapter: this.adapter(datasourceUrl) });
-      } else {
-        return new PrismaClient({ datasourceUrl });
-      }
+      return this.config.adapter
+        ? new PrismaClient({ adapter: this.config.adapter(datasourceUrl) })
+        : new PrismaClient({ datasourceUrl });
     };
-    this.prismaMap[`${engineVersion}-${hash}-${datasourceUrl}`] = result();
+    const prisma = resolve();
+    prisma.catch(() => {
+      delete this.prismaMap[`${engineVersion}-${hash}-${datasourceUrl}`];
+    });
+    this.prismaMap[`${engineVersion}-${hash}-${datasourceUrl}`] = prisma;
+    return prisma;
+  }
+  async updateSchema({
+    hash,
+    headers,
+    body,
+  }: {
+    hash: string;
+    headers: IncomingHttpHeaders;
+    body: unknown;
+  }) {
+    if (await this.getPrisma({ hash, headers, ignoreSchemaError: true }).catch(() => null)) return;
+
+    const engineVersion = headers['prisma-engine-hash'] as string;
+    const datasourceUrl = await this.getDatasourceUrl(headers);
+    if (!datasourceUrl) {
+      throw new ResultError(401, { Unauthorized: { reason: 'InvalidKey' } });
+    }
+    const inlineSchema = String(body);
+
+    this.createPrismaClient({
+      inlineSchema,
+      engineVersion,
+      hash,
+      datasourceUrl,
+    });
+    await this.config.onChangeSchema?.({ inlineSchema, engineVersion, hash, datasourceUrl });
   }
 }
