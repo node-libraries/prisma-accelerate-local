@@ -82,10 +82,12 @@ export const createServer = ({
     secret,
     datasourceUrl,
     adapter: wasm ? getAdapter : undefined,
+    getRuntime: () => require(`@prisma/client/runtime/query_engine_bg.postgresql.js`),
     getPrismaClient,
     getQueryEngineWasmModule: wasm
       ? async () => {
-          const runtimePath = './node_modules/@prisma/client/runtime/query-engine.wasm';
+          const runtimePath =
+            './node_modules/@prisma/client/runtime/query_engine_bg.postgresql.wasm';
           const queryEngineWasmFilePath = fs.existsSync(runtimePath)
             ? runtimePath
             : path.resolve(
@@ -93,7 +95,7 @@ export const createServer = ({
                 fs.existsSync(path.resolve(__dirname, '../node_modules')) ? '..' : '../..',
                 'node_modules',
                 '@prisma/client/runtime',
-                'query-engine.wasm'
+                'query_engine_bg.postgresql.wasm'
               );
           const queryEngineWasmFileBytes = fs.readFileSync(queryEngineWasmFilePath);
           return new WebAssembly.Module(queryEngineWasmFileBytes);

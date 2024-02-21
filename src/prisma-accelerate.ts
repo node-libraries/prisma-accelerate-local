@@ -50,8 +50,12 @@ export class PrismaAccelerate {
 
   constructor(
     private config: {
+      singleInstance?: boolean;
       getQueryEngineWasmModule?: () => Promise<unknown>;
       getPrismaClient: typeof getPrismaClient;
+      getRuntime?: Required<
+        InstanceType<ReturnType<typeof getPrismaClient>>['_engineConfig']
+      >['engineWasm']['getRuntime'];
       adapter?: (datasourceUrl: string) => DriverAdapter;
       secret?: string;
       datasourceUrl?: string;
@@ -215,7 +219,16 @@ export class PrismaAccelerate {
   }) {
     const prisma = await this.getPrisma({ hash, headers });
     if (!prisma) return;
-    const { id } = await prisma._engine.transaction('start', {}, JSON.parse(body as string));
+    const arg = JSON.parse(body as string);
+    const { id } = await prisma._engine.transaction(
+      'start',
+      {},
+      {
+        ...arg,
+        maxWait: arg.maxWait ?? arg.max_wait,
+        isolationLevel: arg.isolationLevel ?? arg.isolation_level,
+      }
+    );
     const host = headers['x-forwarded-host'] ?? headers['host'];
     return {
       id,
@@ -313,7 +326,7 @@ export class PrismaAccelerate {
       const dirname = await this.getPath(engineVersion);
       const PrismaClient = this.config.getPrismaClient({
         ...BaseConfig,
-        inlineSchema,
+        inlineSchema: atob(inlineSchema),
         dirname,
         engineVersion,
         generator: this.config.adapter
@@ -340,7 +353,13 @@ export class PrismaAccelerate {
               previewFeatures: ['driverAdapters'],
             }
           : undefined,
-        getQueryEngineWasmModule: this.config.getQueryEngineWasmModule,
+        engineWasm:
+          this.config.getQueryEngineWasmModule && this.config.getRuntime
+            ? {
+                getRuntime: this.config.getRuntime,
+                getQueryEngineWasmModule: this.config.getQueryEngineWasmModule,
+              }
+            : undefined,
       });
       return this.config.adapter
         ? new PrismaClient({ adapter: this.config.adapter(datasourceUrl) })
@@ -350,7 +369,9 @@ export class PrismaAccelerate {
     prisma.catch(() => {
       delete this.prismaMap[`${engineVersion}-${hash}-${datasourceUrl}`];
     });
-    this.prismaMap[`${engineVersion}-${hash}-${datasourceUrl}`] = prisma;
+    if (!this.config.singleInstance) {
+      this.prismaMap[`${engineVersion}-${hash}-${datasourceUrl}`] = prisma;
+    }
     return prisma;
   }
   async updateSchema({
