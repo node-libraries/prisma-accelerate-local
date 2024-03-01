@@ -127,16 +127,22 @@ export const createServer = ({
     },
   });
 
-  return fastify({
+  const fstf = fastify({
     https: https === undefined ? createKey() : https,
     ...fastifySeverOptions,
   })
-    .post('/:version/:hash/graphql', async ({ body, params, headers }, reply) => {
-      const { hash } = params as { hash: string };
-      return prismaAccelerate.query({ hash, headers, body }).catch((e) => {
-        return reply.status(e.code).send(e.value);
-      });
-    })
+
+  fstf.addContentTypeParser('*', { parseAs: 'string' }, function (req, body: any, done) {
+    done(null, body)
+  })
+
+
+  fstf.post('/:version/:hash/graphql', async ({ body, params, headers }, reply) => {
+    const { hash } = params as { hash: string };
+    return prismaAccelerate.query({ hash, headers, body }).catch((e) => {
+      return reply.status(e.code).send(e.value);
+    });
+  })
     .post('/:version/:hash/transaction/start', async ({ body, params, headers }, reply) => {
       const { version, hash } = params as { version: string; hash: string };
       return prismaAccelerate.startTransaction({ version, hash, headers, body }).catch((e) => {
@@ -167,4 +173,6 @@ export const createServer = ({
         return reply.status(e.code).send(e.value);
       });
     });
+
+  return fstf;
 };
