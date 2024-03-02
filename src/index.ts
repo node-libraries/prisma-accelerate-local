@@ -157,19 +157,19 @@ export const createServer = ({
   const fstf = fastify({
     https: https === undefined ? createKey() : https,
     ...fastifySeverOptions,
-  })
+  });
 
-  fstf.addContentTypeParser('*', { parseAs: 'string' }, function (req, body: any, done) {
-    done(null, body)
-  })
+  fstf.addContentTypeParser('*', { parseAs: 'string' }, function (_req, body, done) {
+    done(null, body);
+  });
 
-
-  fstf.post('/:version/:hash/graphql', async ({ body, params, headers }, reply) => {
-    const { hash } = params as { hash: string };
-    return prismaAccelerate.query({ hash, headers, body }).catch((e) => {
-      return reply.status(e.code).send(e.value);
-    });
-  })
+  fstf
+    .post('/:version/:hash/graphql', async ({ body, params, headers }, reply) => {
+      const { hash } = params as { hash: string };
+      return prismaAccelerate.query({ hash, headers, body }).catch((e) => {
+        return reply.status(e.code).send(e.value);
+      });
+    })
     .post('/:version/:hash/transaction/start', async ({ body, params, headers }, reply) => {
       const { version, hash } = params as { version: string; hash: string };
       const result = await prismaAccelerate
