@@ -149,62 +149,66 @@ export class PrismaAccelerate {
     const prisma = await this.getPrisma({ hash, headers });
     if (!prisma) return;
     const query = JSON.parse(body as string);
+    try {
+      if (query.batch) {
+        const result = await prisma._engine
+          .requestBatch(query.batch, {
+            containsWrite: true,
+            transaction: query.transaction
+              ? {
+                  kind: 'batch',
+                  options: query.transaction,
+                }
+              : undefined,
+          })
+          .then((batchResult) => {
+            return {
+              batchResult: batchResult.map((v) => ('data' in v ? v.data : v)),
+              extensions: {
+                traces: [],
+                logs: [],
+              },
+            };
+          })
+          .catch((e) => {
+            return {
+              errors: [
+                {
+                  error: String(e),
+                  user_facing_error: {
+                    is_panic: false,
+                    message: e.message,
+                    meta: e.meta,
+                    error_code: e.code,
+                    batch_request_idx: 1,
+                  },
+                },
+              ],
+            };
+          });
 
-    if (query.batch) {
-      const result = await prisma._engine
-        .requestBatch(query.batch, {
-          containsWrite: true,
-          transaction: query.transaction
-            ? {
-                kind: 'batch',
-                options: query.transaction,
-              }
-            : undefined,
-        })
-        .then((batchResult) => {
-          return {
-            batchResult: batchResult.map((v) => ('data' in v ? v.data : v)),
-            extensions: {
-              traces: [],
-              logs: [],
-            },
-          };
-        })
-        .catch((e) => {
+        return result;
+      }
+      return await prisma._engine
+        .request(query, { isWrite: true })
+        .catch((e: { message: string; code: number; meta: unknown }) => {
           return {
             errors: [
               {
                 error: String(e),
                 user_facing_error: {
-                  is_panic: false,
                   message: e.message,
-                  meta: e.meta,
                   error_code: e.code,
-                  batch_request_idx: 1,
+                  is_panic: false,
+                  meta: e.meta,
                 },
               },
             ],
           };
         });
-      return result;
+    } finally {
+      if (this.config.singleInstance) await prisma.$disconnect();
     }
-    return prisma._engine
-      .request(query, { isWrite: true })
-      .catch((e: { message: string; code: number; meta: unknown }) => {
-        return {
-          errors: [
-            {
-              error: String(e),
-              user_facing_error: {
-                message: e.message,
-                error_code: e.code,
-                is_panic: false,
-                meta: e.meta,
-              },
-            },
-          ],
-        };
-      });
   }
   async startTransaction({
     version,
@@ -224,12 +228,13 @@ export class PrismaAccelerate {
       'start',
       {},
       {
-        ...arg,
-        maxWait: arg.maxWait ?? arg.max_wait,
-        isolationLevel: arg.isolationLevel ?? arg.isolation_level,
+        timeout: arg.timeout,
+        maxWait: arg.max_wait,
+        isolationLevel: arg.isolation_level,
       }
     );
     const host = headers['x-forwarded-host'] ?? headers['host'];
+    if (this.config.singleInstance) await prisma.$disconnect();
     return {
       id,
       extensions: {},
@@ -272,6 +277,7 @@ export class PrismaAccelerate {
           ],
         };
       });
+    if (this.config.singleInstance) await prisma.$disconnect();
     return result;
   }
   async commitTransaction({
@@ -298,7 +304,9 @@ export class PrismaAccelerate {
   }) {
     const prisma = await this.getPrisma({ hash, headers });
     if (!prisma) return;
-    return prisma._engine.transaction('rollback', {}, { id, payload: {} });
+    const result = await prisma._engine.transaction('rollback', {}, { id, payload: {} });
+    if (this.config.singleInstance) await prisma.$disconnect();
+    return result;
   }
   async getPath(engineVersion: string) {
     if (!this.config.getEnginePath) return '';
@@ -392,12 +400,15 @@ export class PrismaAccelerate {
     }
     const inlineSchema = String(body);
 
-    this.createPrismaClient({
-      inlineSchema,
-      engineVersion,
-      hash,
-      datasourceUrl,
-    });
+    if (!this.config.singleInstance) {
+      await this.createPrismaClient({
+        inlineSchema,
+        engineVersion,
+        hash,
+        datasourceUrl,
+      });
+    }
+
     await this.config.onChangeSchema?.({ inlineSchema, engineVersion, hash, datasourceUrl });
   }
 }
