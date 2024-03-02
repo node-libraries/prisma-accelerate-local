@@ -71,12 +71,36 @@ export const createServer = ({
   wasm,
   secret,
   fastifySeverOptions,
+  singleInstance,
+  onRequestSchema,
+  onChangeSchema,
 }: {
   datasourceUrl?: string;
   https?: { cert: string; key: string } | null;
   wasm?: boolean;
   secret?: string;
   fastifySeverOptions?: Omit<FastifyHttpsOptions<Server>, 'https'> | FastifyHttpsOptions<Server>;
+  singleInstance?: boolean;
+  onRequestSchema?: ({
+    engineVersion,
+    hash,
+    datasourceUrl,
+  }: {
+    engineVersion: string;
+    hash: string;
+    datasourceUrl: string;
+  }) => Promise<string | undefined | null>;
+  onChangeSchema?: ({
+    inlineSchema,
+    engineVersion,
+    hash,
+    datasourceUrl,
+  }: {
+    inlineSchema: string;
+    engineVersion: string;
+    hash: string;
+    datasourceUrl: string;
+  }) => Promise<void>;
 }) => {
   const prismaAccelerate = new PrismaAccelerate({
     secret,
@@ -84,6 +108,9 @@ export const createServer = ({
     adapter: wasm ? getAdapter : undefined,
     getRuntime: () => require(`@prisma/client/runtime/query_engine_bg.postgresql.js`),
     getPrismaClient,
+    singleInstance,
+    onRequestSchema,
+    onChangeSchema,
     getQueryEngineWasmModule: wasm
       ? async () => {
           const runtimePath =
@@ -145,9 +172,12 @@ export const createServer = ({
   })
     .post('/:version/:hash/transaction/start', async ({ body, params, headers }, reply) => {
       const { version, hash } = params as { version: string; hash: string };
-      return prismaAccelerate.startTransaction({ version, hash, headers, body }).catch((e) => {
-        return reply.status(e.code).send(e.value);
-      });
+      const result = await prismaAccelerate
+        .startTransaction({ version, hash, headers, body })
+        .catch((e) => {
+          return reply.status(e.code).send(e.value);
+        });
+      return result;
     })
     .post('/:version/:hash/itx/:id/graphql', async ({ body, params, headers }, reply) => {
       const { hash, id } = params as { hash: string; id: string };
@@ -172,6 +202,9 @@ export const createServer = ({
       return prismaAccelerate.updateSchema({ hash, headers, body }).catch((e) => {
         return reply.status(e.code).send(e.value);
       });
+    })
+    .all('*', async (req, reply) => {
+      return reply.status(404).send('Not found');
     });
 
   return fstf;

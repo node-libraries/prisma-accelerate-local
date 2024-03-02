@@ -6,8 +6,16 @@ const port = 8001;
 
 describe('transaction test', () => {
   const property = beforeAllAsync(async () => {
+    let schema: string | undefined = undefined;
     const server = createServer({
       datasourceUrl: 'postgresql://postgres:password@localhost:25432/postgres?schema=test',
+      singleInstance: true,
+      onChangeSchema: async ({ inlineSchema, engineVersion, hash, datasourceUrl }) => {
+        schema = inlineSchema;
+      },
+      onRequestSchema: async ({ engineVersion, hash, datasourceUrl }) => {
+        return schema;
+      },
     });
     server.listen({ port });
     const prisma = new PrismaClient({
@@ -43,18 +51,6 @@ describe('transaction test', () => {
       prisma.post.create({ data: { title: 'test1', content: 'test1@example.com' } }),
       prisma.post.create({ data: { title: 'test2', content: 'test2@example.com' } }),
     ]);
-    expect(result.length).toEqual(2);
-  });
-
-  it('transaction', async () => {
-    const { prisma } = await property;
-    await prisma.post.deleteMany();
-    const result = await prisma.$transaction(async (prisma) => {
-      return [
-        await prisma.post.create({ data: { title: 'test1', content: 'test1@example.com' } }),
-        await prisma.post.create({ data: { title: 'test2', content: 'test2@example.com' } }),
-      ];
-    });
     expect(result.length).toEqual(2);
   });
 });

@@ -15,7 +15,6 @@ const config: Config = {
   coverageDirectory: './coverage',
   testEnvironment: 'node',
   coveragePathIgnorePatterns: ['/node_modules/'],
-  testPathIgnorePatterns: ['deno'],
 };
 
 export default config;
