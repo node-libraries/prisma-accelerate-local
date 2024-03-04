@@ -23,6 +23,7 @@ Prisma Accelerate functionality can be self-hosted locally.
 | **ARGUMENTS** | _\<url>_                    | Datasource url                                |
 | **OPTIONS**   | -t, --http                  | Accepted at http                              |
 |               | -p, --port \<port>          | Port to listen on (default:4000)              |
+|               | -h, --host \<host>          | Host to listen on (default:localhost)         |
 |               | -c, --cert \<path>          | Path to ssl cert file                         |
 |               | -k, --key \<path>           | Path to ssl key file                          |
 |               | -w, --wasm                  | Use wasm as the run-time engine(early-access) |
