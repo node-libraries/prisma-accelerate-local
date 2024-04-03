@@ -6,11 +6,13 @@ Prisma Accelerate functionality can be self-hosted locally.
 
 - Node.js (local)  
   https://github.com/SoraKumo001/prisma-accelerate-local-test
-- Cloudflare Workers (local)  
+- Cloudflare Workers(Postgres) (local)  
   https://github.com/SoraKumo001/cloudflare-workers-prisma
-- Cloudflare Workers (server)  
+- Cloudflare Workers(Postgres) (server)  
   https://github.com/SoraKumo001/prisma-accelerate-workers
-- Deno (server)  
+- Cloudflare Workers(D1) (server)  
+  https://github.com/SoraKumo001/prisma-accelerate-workers-d1
+- Deno(Postgres) (server)  
   https://github.com/SoraKumo001/prisma-accelerate-deno
 
 ## usage
