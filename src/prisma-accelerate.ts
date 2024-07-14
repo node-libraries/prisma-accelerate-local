@@ -27,6 +27,13 @@ export class ResultError extends Error {
     super();
   }
 }
+export type ActiveConnectorType =
+  | 'mysql'
+  | 'mongodb'
+  | 'sqlite'
+  | 'postgresql'
+  | 'sqlserver'
+  | 'cockroachdb';
 
 export type PrismaAccelerateConfig = ConstructorParameters<typeof PrismaAccelerate>[0];
 
@@ -50,6 +57,7 @@ export class PrismaAccelerate {
 
   constructor(
     private config: {
+      activeProvider?: ActiveConnectorType;
       singleInstance?: boolean;
       getQueryEngineWasmModule?: () => Promise<unknown>;
       getPrismaClient: typeof getPrismaClient;
@@ -337,6 +345,7 @@ export class PrismaAccelerate {
         inlineSchema: atob(inlineSchema),
         dirname,
         engineVersion,
+        activeProvider: this.config.activeProvider ?? 'postgresql',
         generator: this.config.adapter
           ? {
               name: '',
@@ -359,6 +368,7 @@ export class PrismaAccelerate {
                 },
               ],
               previewFeatures: ['driverAdapters'],
+              sourceFilePath: 'schema.prisma',
             }
           : undefined,
         engineWasm:

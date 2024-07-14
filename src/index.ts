@@ -105,6 +105,7 @@ export const createServer = ({
   const prismaAccelerate = new PrismaAccelerate({
     secret,
     datasourceUrl,
+    activeProvider: 'postgresql',
     adapter: wasm ? getAdapter : undefined,
     getRuntime: () => require(`@prisma/client/runtime/query_engine_bg.postgresql.js`),
     getPrismaClient,
@@ -154,16 +155,16 @@ export const createServer = ({
     },
   });
 
-  const fstf = fastify({
+  const _fastify = fastify({
     https: https === undefined ? createKey() : https,
     ...fastifySeverOptions,
   });
 
-  fstf.addContentTypeParser('*', { parseAs: 'string' }, function (_req, body, done) {
+  _fastify.addContentTypeParser('*', { parseAs: 'string' }, function (_req, body, done) {
     done(null, body);
   });
 
-  fstf
+  _fastify
     .post('/:version/:hash/graphql', async ({ body, params, headers }, reply) => {
       const { hash } = params as { hash: string };
       return prismaAccelerate.query({ hash, headers, body }).catch((e) => {
@@ -207,5 +208,5 @@ export const createServer = ({
       return reply.status(404).send('Not found');
     });
 
-  return fstf;
+  return _fastify;
 };

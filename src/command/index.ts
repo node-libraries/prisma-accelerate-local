@@ -8,7 +8,7 @@ import '@colors/colors';
 const readPackage = () => {
   try {
     return require(path.resolve(__dirname, '../../../package.json'));
-  } catch (e) { }
+  } catch (e) {}
   return require(path.resolve(__dirname, '../../package.json'));
 };
 
@@ -67,9 +67,9 @@ const main = async () => {
     const https =
       cert && key
         ? {
-          cert: fs.readFileSync(cert).toString('utf8'),
-          key: fs.readFileSync(key).toString('utf8'),
-        }
+            cert: fs.readFileSync(cert).toString('utf8'),
+            key: fs.readFileSync(key).toString('utf8'),
+          }
         : undefined;
 
     createServer({
