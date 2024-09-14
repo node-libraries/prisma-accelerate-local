@@ -10,6 +10,6 @@ services:
     volumes:
       - prisma-accelerate-local-vol:/var/lib/postgresql/data
     ports:
-      - '25432:5432'
+      - '55432:5432'
 volumes:
   prisma-accelerate-local-vol:

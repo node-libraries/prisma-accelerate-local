@@ -8,7 +8,7 @@ describe('transaction test', () => {
   const property = beforeAllAsync(async () => {
     let schema: string | undefined = undefined;
     const server = createServer({
-      datasourceUrl: 'postgresql://postgres:password@localhost:25432/postgres?schema=test',
+      datasourceUrl: process.env.DATABASE_URL,
       singleInstance: true,
       onChangeSchema: async ({ inlineSchema, engineVersion, hash, datasourceUrl }) => {
         schema = inlineSchema;

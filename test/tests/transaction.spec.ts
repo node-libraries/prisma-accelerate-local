@@ -7,7 +7,7 @@ const port = 8001;
 describe('transaction test', () => {
   const property = beforeAllAsync(async () => {
     const server = createServer({
-      datasourceUrl: 'postgresql://postgres:password@localhost:25432/postgres?schema=test',
+      datasourceUrl: process.env.DATABASE_URL,
     });
     server.listen({ port });
     const prisma = new PrismaClient({

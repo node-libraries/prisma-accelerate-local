@@ -75,7 +75,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_DB: postgres
         ports:
-          - 25432:5432
+          - 55432:5432
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3

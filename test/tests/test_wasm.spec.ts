@@ -7,7 +7,7 @@ const port = 8004;
 describe('insert', () => {
   const property = beforeAllAsync(async () => {
     const server = createServer({
-      datasourceUrl: 'postgresql://postgres:password@localhost:25432/postgres?schema=test',
+      datasourceUrl: process.env.DATABASE_URL,
       wasm: true,
     });
     server.listen({ port });
@@ -38,7 +38,7 @@ describe('insert', () => {
 describe('query error', () => {
   const property = beforeAllAsync(async () => {
     const server = createServer({
-      datasourceUrl: 'postgresql://postgres:password@localhost:25432/postgres?schema=test',
+      datasourceUrl: process.env.DATABASE_URL,
       wasm: true,
     });
     server.listen({ port });
@@ -90,8 +90,7 @@ describe('query error', () => {
 });
 
 describe('api_key', () => {
-  const apiKey =
-    'eyJhbGciOiJIUzI1NiJ9.eyJkYXRhc291cmNlVXJsIjoicG9zdGdyZXNxbDovL3Bvc3RncmVzOnBhc3N3b3JkQGxvY2FsaG9zdDoyNTQzMi9wb3N0Z3Jlcz9zY2hlbWE9dGVzdCIsImlhdCI6MTcwMzY1NzkyNCwiaXNzIjoicHJpc21hLWFjY2VsZXJhdGUifQ.qatmr52J4PgMsC3wI2Ie9r00mhRVT22oDt7ca7hqf98';
+  const apiKey = process.env.API_KEY;
 
   const property = beforeAllAsync(async () => {
     const server = createServer({
