@@ -15,6 +15,7 @@ export default [
       import: importPlugin,
     },
     rules: {
+      '@typescript-eslint/no-require-imports': 0,
       '@typescript-eslint/no-unused-vars': 0,
       'no-empty-pattern': 0,
       'no-empty': 0,

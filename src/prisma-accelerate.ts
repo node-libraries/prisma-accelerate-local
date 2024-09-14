@@ -350,19 +350,19 @@ export class PrismaAccelerate {
           ? {
               name: '',
               provider: {
-                fromEnvVar: null,
+                fromEnvVar: '',
                 value: 'prisma-client-js',
               },
               output: {
                 value: '',
-                fromEnvVar: null,
+                fromEnvVar: '',
               },
               config: {
                 engineType: 'wasm',
               },
               binaryTargets: [
                 {
-                  fromEnvVar: null,
+                  fromEnvVar: '',
                   value: 'native',
                   native: true,
                 },

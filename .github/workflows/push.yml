@@ -86,7 +86,5 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
-      - name: Initialize DB
-        run: yarn test:reset && yarn prisma:generate
       - name: Test
         run: yarn test
