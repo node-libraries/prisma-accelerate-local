@@ -16,6 +16,7 @@
     "test:proxy": "tsc && node dist/cjs/command postgresql://postgres:password@localhost:25432/postgres?schema=test -p 8000",
     "test:docker": "docker compose -p prisma-accelerate-local -f test/docker/docker-compose.yml up -d",
     "test:reset": "yarn prisma:reset",
+    "test:actions": "yarn prisma:migrate && yarn prisma:generate && next-exec -c test -- jest --coverage",
     "test": "yarn test:docker && yarn prisma:migrate && yarn prisma:generate && next-exec -c test -- jest --coverage"
   },
   "bin": {
