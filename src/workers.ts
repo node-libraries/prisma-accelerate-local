@@ -2,17 +2,23 @@ import { DriverAdapter } from '@prisma/client/runtime/library';
 import { getPrismaClient } from '@prisma/client/runtime/wasm.js';
 import { PrismaAccelerate, PrismaAccelerateConfig, ResultError } from './prisma-accelerate';
 
-/// <reference lib="../../wasm.d.ts" />
+export type CreateParams<Env extends Record<string, unknown>> = {
+  runtime: Required<
+    InstanceType<ReturnType<typeof getPrismaClient>>['_engineConfig']
+  >['engineWasm']['getRuntime'];
+  adapter: (datasourceUrl: string) => DriverAdapter;
+  queryEngineWasmModule: unknown;
+  secret?: (env: Env) => string;
+  singleInstance?: boolean;
+};
 
 export const createFetcher = <Env extends Record<string, unknown>>({
   adapter,
   queryEngineWasmModule,
   secret,
-}: {
-  adapter: (datasourceUrl: string) => DriverAdapter;
-  queryEngineWasmModule: unknown;
-  secret?: (env: Env) => string;
-}) => {
+  singleInstance = true,
+  runtime,
+}: CreateParams<Env>) => {
   let prismaAccelerate: PrismaAccelerate;
   const getPrismaAccelerate = async ({
     secret,
@@ -27,10 +33,10 @@ export const createFetcher = <Env extends Record<string, unknown>>({
       return prismaAccelerate;
     }
     prismaAccelerate = new PrismaAccelerate({
-      singleInstance: true,
+      singleInstance,
       secret,
       adapter: adapter,
-      getRuntime: () => require(`@prisma/client/runtime/query_engine_bg.postgresql.js`),
+      getRuntime: runtime,
       getQueryEngineWasmModule: async () => {
         return queryEngineWasmModule;
       },

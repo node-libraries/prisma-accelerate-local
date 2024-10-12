@@ -16,3 +16,4 @@ jest.config.ts
 .env.*
 /esm
 /documents
+eslint.config.mjs

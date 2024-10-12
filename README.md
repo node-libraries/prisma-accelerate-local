@@ -122,7 +122,6 @@ Use Prisma versions lower than 5.20.0; due to the size of the wasm, it will not 
   },
   "dependencies": {
     "@prisma/adapter-pg": "<5.20.0",
-    "@prisma/adapter-pg-worker": "<5.20.0",
     "@prisma/client": "<5.20.0",
     "pg": "^8.13.0",
     "prisma-accelerate-local": "^1.1.6"
@@ -136,8 +135,7 @@ Use Prisma versions lower than 5.20.0; due to the size of the wasm, it will not 
   },
   "resolutions": {
     "@prisma/client": "5.19.1",
-    "@prisma/adapter-pg": "5.19.1",
-    "@prisma/adapter-pg-worker": "5.19.1"
+    "@prisma/adapter-pg": "5.19.1"
   }
 }
 ```
@@ -174,6 +172,7 @@ export type Env = {
 
 export default {
   fetch: createFetcher({
+    runtime: () => require(`@prisma/client/runtime/query_engine_bg.postgresql.js`),
     secret: (env: Env) => env.SECRET,
     queryEngineWasmModule: WASM,
     adapter: (datasourceUrl: string) => {
