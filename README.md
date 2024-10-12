@@ -100,6 +100,34 @@ const server = createServer({
   .then((url) => console.log(`🚀  Server ready at ${url} `));
 ```
 
+## Cloudflare Workers (D1)
+
+https://github.com/SoraKumo001/prisma-accelerate-workers-d1
+
+```ts
+import WASM from '@prisma/client/runtime/query_engine_bg.sqlite.wasm';
+import { PrismaD1 } from '@prisma/adapter-d1';
+import { createFetcher } from 'prisma-accelerate-local/workers';
+
+export type Env = {
+  SECRET: string;
+} & {
+  [key: string]: D1Database;
+};
+
+export default {
+  fetch: createFetcher({
+    queryEngineWasmModule: WASM,
+    secret: (env: Env) => env.SECRET,
+    runtime: () => require(`@prisma/client/runtime/query_engine_bg.sqlite.js`),
+    adapter: (datasourceUrl: string, env) => {
+      return new PrismaD1(env[datasourceUrl]);
+    },
+    singleInstance: false,
+  }),
+};
+```
+
 ## Cloudflare Workers (PostgreSQL)
 
 https://github.com/SoraKumo001/prisma-accelerate-workers
@@ -121,17 +149,17 @@ Use Prisma versions lower than 5.20.0; due to the size of the wasm, it will not 
     "start": "wrangler dev"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "<5.20.0",
-    "@prisma/client": "<5.20.0",
+    "@prisma/adapter-pg": "^5.20.0",
+    "@prisma/client": "^5.20.0",
     "pg": "^8.13.0",
-    "prisma-accelerate-local": "^1.1.6"
+    "prisma-accelerate-local": "^1.1.10"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240925.0",
+    "@cloudflare/workers-types": "^4.20241011.0",
     "@types/pg": "^8.11.10",
     "pg-compat": "^0.0.7",
-    "typescript": "^5.6.2",
-    "wrangler": "^3.78.12"
+    "typescript": "^5.6.3",
+    "wrangler": "^3.80.4"
   },
   "resolutions": {
     "@prisma/client": "5.19.1",

@@ -6,7 +6,7 @@ export type CreateParams<Env extends Record<string, unknown>> = {
   runtime: Required<
     InstanceType<ReturnType<typeof getPrismaClient>>['_engineConfig']
   >['engineWasm']['getRuntime'];
-  adapter: (datasourceUrl: string) => DriverAdapter;
+  adapter: (datasourceUrl: string, env: Env) => DriverAdapter;
   queryEngineWasmModule: unknown;
   secret?: (env: Env) => string;
   singleInstance?: boolean;
@@ -21,10 +21,12 @@ export const createFetcher = <Env extends Record<string, unknown>>({
 }: CreateParams<Env>) => {
   let prismaAccelerate: PrismaAccelerate;
   const getPrismaAccelerate = async ({
+    env,
     secret,
     onRequestSchema,
     onChangeSchema,
   }: {
+    env: Env;
     secret: string;
     onRequestSchema: PrismaAccelerateConfig['onRequestSchema'];
     onChangeSchema: PrismaAccelerateConfig['onChangeSchema'];
@@ -35,7 +37,7 @@ export const createFetcher = <Env extends Record<string, unknown>>({
     prismaAccelerate = new PrismaAccelerate({
       singleInstance,
       secret,
-      adapter: adapter,
+      adapter: (datasourceUrl) => adapter(datasourceUrl, env),
       getRuntime: runtime,
       getQueryEngineWasmModule: async () => {
         return queryEngineWasmModule;
@@ -50,6 +52,7 @@ export const createFetcher = <Env extends Record<string, unknown>>({
   return async (request: Request, env: Env): Promise<Response> => {
     const prismaAccelerate = await getPrismaAccelerate({
       secret: secret?.(env) ?? 'test',
+      env,
       onRequestSchema: async ({ engineVersion, hash, datasourceUrl }) => {
         const cache = await caches.open('schema');
         return cache
