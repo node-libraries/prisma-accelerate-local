@@ -1,6 +1,6 @@
 {
   "name": "prisma-accelerate-local",
-  "version": "1.1.11",
+  "version": "1.1.14",
   "license": "MIT",
   "scripts": {
     "build": "tsc && tsc -p ./tsconfig.esm.json && cpy esm dist",
@@ -34,7 +34,12 @@
       "import": "./dist/esm/prisma-accelerate.js"
     },
     "./workers": {
+      "require": "./dist/cjs/workers.js",
       "import": "./dist/esm/workers.js"
+    },
+    "./deno": {
+      "require": "./dist/cjs/deno.js",
+      "import": "./dist/esm/deno.js"
     }
   },
   "typesVersions": {
@@ -44,6 +49,9 @@
       ],
       "workers": [
         "./dist/esm/workers.d.ts"
+      ],
+      "deno": [
+        "./dist/esm/deno.d.ts"
       ],
       "*": [
         "./dist/esm/index.d.ts"
