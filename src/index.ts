@@ -1,12 +1,9 @@
 import fs from 'fs';
 import { type Server } from 'node:https';
 import path from 'path';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { getPrismaClient } from '@prisma/client/runtime/library.js';
 import { download } from '@prisma/fetch-engine';
 import { fastify, type FastifyHttpsOptions } from 'fastify';
 import forge from 'node-forge';
-import pg from 'pg';
 import { PrismaAccelerate } from './prisma-accelerate.js';
 export * from './prisma-accelerate.js';
 
@@ -57,6 +54,8 @@ export const createKey = () => {
 const getAdapter = (datasourceUrl: string) => {
   const url = new URL(datasourceUrl);
   const schema = url.searchParams.get('schema');
+  const { PrismaPg } = require('@prisma/adapter-pg');
+  const pg = require('pg');
   const pool = new pg.Pool({
     connectionString: url.toString(),
   });
@@ -102,6 +101,7 @@ export const createServer = ({
     datasourceUrl: string;
   }) => Promise<void>;
 }) => {
+  const { getPrismaClient } = require('@prisma/client/runtime/library.js');
   const prismaAccelerate = new PrismaAccelerate({
     secret,
     datasourceUrl,
