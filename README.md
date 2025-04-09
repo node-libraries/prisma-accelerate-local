@@ -105,7 +105,6 @@ const server = createServer({
 https://github.com/SoraKumo001/prisma-accelerate-deno
 
 ```ts
-import pg from 'npm:pg';
 import { PrismaPg } from 'npm:@prisma/adapter-pg';
 import { createHandler, importModule } from 'npm:prisma-accelerate-local/deno';
 import runtime from 'npm:@prisma/client/runtime/query_engine_bg.postgresql.js';
@@ -120,12 +119,14 @@ Deno.serve(
     adapter: (datasourceUrl: string) => {
       const url = new URL(datasourceUrl);
       const schema = url.searchParams.get('schema') ?? undefined;
-      const pool = new pg.Pool({
-        connectionString: url.toString() ?? undefined,
-      });
-      return new PrismaPg(pool, {
-        schema,
-      });
+      return new PrismaPg(
+        {
+          connectionString: url.toString() ?? undefined,
+        },
+        {
+          schema,
+        }
+      );
     },
   })
 );
@@ -194,22 +195,25 @@ Need `pg-compat` to patch `pg` to fix it.
 }
 ```
 
-- wrangler.toml
+- wrangler.jsonc
 
-Set `nodejs_compat_v2`.
-
-```toml
-name = "prisma-accelerate-workers"
-main = "src/index.ts"
-minify = true
-compatibility_date = "2024-09-23"
-compatibility_flags = ["nodejs_compat_v2"]
-
-[placement]
-mode = "smart"
-
-[observability]
-enabled = true
+```jsonc
+{
+  "name": "prisma-accelerate-workers",
+  "main": "src/index.ts",
+  "minify": true,
+  "compatibility_date": "2025-04-09",
+  "compatibility_flags": ["nodejs_compat"],
+  "placement": {
+    "mode": "smart",
+  },
+  "observability": {
+    "enabled": true,
+  },
+  "vars": {
+    // "SECRET":"***"
+  },
+}
 ```
 
 - src/index.ts

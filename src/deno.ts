@@ -1,4 +1,4 @@
-import { DriverAdapter } from '@prisma/client/runtime/library';
+import { SqlDriverAdapterFactory } from '@prisma/client/runtime/library';
 import { getPrismaClient } from '@prisma/client/runtime/wasm.js';
 import { PrismaAccelerate, PrismaAccelerateConfig, ResultError } from './prisma-accelerate.js';
 
@@ -6,7 +6,7 @@ export type CreateParams = {
   runtime: Required<
     InstanceType<ReturnType<typeof getPrismaClient>>['_engineConfig']
   >['engineWasm']['getRuntime'];
-  adapter: (datasourceUrl: string) => DriverAdapter;
+  adapter: (datasourceUrl: string) => SqlDriverAdapterFactory;
   queryEngineWasmModule: unknown;
   secret: string;
 };

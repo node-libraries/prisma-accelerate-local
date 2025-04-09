@@ -95,6 +95,7 @@ describe('api_key', () => {
   const property = beforeAllAsync(async () => {
     const server = createServer({
       secret: 'abc',
+      datasourceUrl: process.env.DATABASE_URL,
       wasm: true,
     });
     server.listen({ port });

@@ -5,6 +5,7 @@ import { download } from '@prisma/fetch-engine';
 import { fastify, type FastifyHttpsOptions } from 'fastify';
 import forge from 'node-forge';
 import { PrismaAccelerate } from './prisma-accelerate.js';
+import type { SqlDriverAdapterFactory } from '@prisma/client/runtime/library.js';
 export * from './prisma-accelerate.js';
 
 export const createKey = () => {
@@ -51,17 +52,16 @@ export const createKey = () => {
   };
 };
 
-const getAdapter = (datasourceUrl: string) => {
+const getAdapter = (datasourceUrl: string): SqlDriverAdapterFactory => {
   const url = new URL(datasourceUrl);
   const schema = url.searchParams.get('schema');
   const { PrismaPg } = require('@prisma/adapter-pg');
-  const pg = require('pg');
-  const pool = new pg.Pool({
-    connectionString: url.toString(),
-  });
-  return new PrismaPg(pool, {
-    schema: schema ?? undefined,
-  });
+  return new PrismaPg(
+    { connectionString: url.toString() },
+    {
+      schema: schema ?? undefined,
+    }
+  );
 };
 
 export const createServer = ({
@@ -106,7 +106,7 @@ export const createServer = ({
     secret,
     datasourceUrl,
     activeProvider: 'postgresql',
-    adapter: wasm ? getAdapter : undefined,
+    adapter: wasm && datasourceUrl ? getAdapter : undefined,
     getRuntime: () => require(`@prisma/client/runtime/query_engine_bg.postgresql.js`),
     getPrismaClient,
     singleInstance,

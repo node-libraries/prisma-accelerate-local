@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose';
-import type { DriverAdapter, getPrismaClient } from '@prisma/client/runtime/library';
+import type { SqlDriverAdapterFactory, getPrismaClient } from '@prisma/client/runtime/library';
 import type { IncomingHttpHeaders } from 'node:http';
 
 const BaseConfig = {
@@ -64,7 +64,7 @@ export class PrismaAccelerate {
       getRuntime?: Required<
         InstanceType<ReturnType<typeof getPrismaClient>>['_engineConfig']
       >['engineWasm']['getRuntime'];
-      adapter?: (datasourceUrl: string) => DriverAdapter;
+      adapter?: (datasourceUrl: string) => SqlDriverAdapterFactory;
       secret?: string;
       datasourceUrl?: string;
       getEnginePath?: (adapter: boolean, engineVersion: string) => Promise<string | undefined>;
