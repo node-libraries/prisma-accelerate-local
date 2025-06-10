@@ -14,54 +14,61 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Cache node modules
+      - uses: actions/checkout@v4
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Cache modules
         id: cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          key: ${{ runner.OS }}-build-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.OS }}-build-
           lookup-only: true
-      - name: Install dependencies
+      - name: Package install
         if: steps.cache.outputs.cache-hit != 'true'
-        run: yarn
-
+        run: pnpm install
   Lint:
     name: Lint
     needs: Modules
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Cache node modules
-        uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Cache modules
+        id: cache
+        uses: actions/cache@v4
         with:
           path: node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          key: ${{ runner.OS }}-build-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.OS }}-build-
       - name: Run lint
-        run: yarn lint
+        run: pnpm run lint
 
   Build:
     name: Build
     needs: Modules
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Cache node modules
-        uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Cache modules
+        id: cache
+        uses: actions/cache@v4
         with:
           path: node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          key: ${{ runner.OS }}-build-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.OS }}-build-
       - name: Run build
-        run: yarn build
+        run: pnpm run build
 
   BackendTest:
     name: Backend Test
@@ -77,14 +84,17 @@ jobs:
         ports:
           - 55432:5432
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Cache node modules
-        uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Cache modules
+        id: cache
+        uses: actions/cache@v4
         with:
           path: node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          key: ${{ runner.OS }}-build-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.OS }}-build-
       - name: Test
-        run: yarn test:actions
+        run: pnpm run test:actions
