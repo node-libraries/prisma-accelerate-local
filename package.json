@@ -99,5 +99,6 @@
     "local"
   ],
   "repository": "https://github.com/node-libraries/prisma-accelerate-local",
-  "author": "SoraKumo <info@croud.jp>"
+  "author": "SoraKumo <info@croud.jp>",
+  "packageManager": "pnpm@10.12.1"
 }
