@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client/edge';
 import { beforeAllAsync } from 'jest-async';
+import { vi } from 'vitest';
 import { createServer } from '../../src';
 
 const port = 8000;
@@ -186,7 +187,7 @@ describe('engine error', () => {
     });
     const engineVersion = { value: '' };
 
-    const mockFetch = jest.fn();
+    const mockFetch = vi.fn();
     global.fetch = mockFetch;
     mockFetch.mockImplementation((url, options) => {
       options.headers['Prisma-Engine-Hash'] = engineVersion.value;
