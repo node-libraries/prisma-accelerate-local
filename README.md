@@ -1,5 +1,10 @@
 # prisma-accelerate-local
 
+[![](https://img.shields.io/npm/l/prisma-accelerate-local)](https://www.npmjs.com/package/prisma-accelerate-local)
+[![](https://img.shields.io/npm/v/prisma-accelerate-local)](https://www.npmjs.com/package/prisma-accelerate-local)
+[![](https://img.shields.io/npm/dw/prisma-accelerate-local)](https://www.npmjs.com/package/prisma-accelerate-local)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com//prisma-accelerate-local)
+
 Prisma Accelerate functionality can be self-hosted locally.
 
 ## Samples
