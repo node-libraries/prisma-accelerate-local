@@ -113,5 +113,3 @@
   "include": ["src", "wasm.d.ts"],
   "exclude": ["test", "node_modules"]
 }
-
-//
