@@ -1,6 +1,6 @@
 {
   "name": "prisma-accelerate-local",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "license": "MIT",
   "scripts": {
     "build": "tsc && tsc -p ./tsconfig.esm.json && cpy esm dist",
@@ -79,7 +79,7 @@
     "cpy-cli": "^5.0.0",
     "eslint": "^9.29.0",
     "eslint-config-prettier": "^10.1.5",
-    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-import": "^2.32.0",
     "jest-async": "^1.0.7",
     "next-exec": "^1.0.0",
     "prettier": "^3.5.3",

@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import minimist from 'minimist';
-import { PrismaAccelerate, createServer } from '..';
+import { PrismaAccelerate, createServer } from '../index.js';
 import '@colors/colors';
 
 const readPackage = () => {
